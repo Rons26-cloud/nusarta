@@ -82,6 +82,22 @@ const softwareJsonLd = {
   ...(url ? { url } : {}),
 };
 
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "NUSARTA",
+  alternateName: ["Nusa Arta", "NUSARTA personal finance"],
+  ...(url ? { url } : {}),
+  publisher: { "@id": url ? `${url}/#organization` : undefined },
+};
+
+const organizationWithIdentity = {
+  ...organizationJsonLd,
+  "@id": url ? `${url}/#organization` : undefined,
+  logo: url ? `${url}/nusarta02.png` : "/nusarta02.png",
+  sameAs: ["https://github.com/Rons26-cloud/nusarta"],
+};
+
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#FBFAF6" },
@@ -106,13 +122,19 @@ export default function RootLayout({
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{
-                __html: JSON.stringify(organizationJsonLd),
+                __html: JSON.stringify(organizationWithIdentity),
               }}
             />
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{
                 __html: JSON.stringify(softwareJsonLd),
+              }}
+            />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify(websiteJsonLd),
               }}
             />
             <Navbar />
