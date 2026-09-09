@@ -23,11 +23,30 @@ jobs:
           TAG="${GITHUB_REF_NAME#v}"
           VERSION="$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)"
           test "$TAG" = "$VERSION"
-      - name: Build signed APK
-        run: flutter build apk --release
+      - name: Restore Android signing files
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/nusarta-release.jks
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=../nusarta-release.jks
+          EOF
+      - name: Build signed APK
+        run: flutter build apk --release
       - run: cp build/app/outputs/flutter-apk/app-release.apk NUSARTA.apk && sha256sum NUSARTA.apk > SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
           files: apps/mobile/NUSARTA.apk,apps/mobile/SHA256SUMS.txt
+      - name: Remove temporary signing files
+        if: always()
+        run: rm -f android/key.properties android/nusarta-release.jks

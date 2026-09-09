@@ -16,9 +16,8 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0.0'
 
 // --- Release signing -------------------------------------------------------
-// If android/key.properties exists, sign release builds with it. Otherwise
-// (and before a keystore is provided) fall back to debug signing so the
-// project still builds. NEVER commit key.properties or any *.jks / *.keystore.
+// Production release builds must have an explicit keystore. NEVER commit
+// key.properties or any *.jks / *.keystore.
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 def hasReleaseKeystore = false
@@ -67,9 +66,10 @@ android {
 
     buildTypes {
         release {
-            signingConfig hasReleaseKeystore
-                ? signingConfigs.release
-                : signingConfigs.debug
+            if (!hasReleaseKeystore) {
+                throw new GradleException('Production release signing is not configured. Provide android/key.properties and the referenced keystore.')
+            }
+            signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
