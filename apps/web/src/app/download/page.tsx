@@ -21,7 +21,7 @@ import { playStoreUrl, releaseDownloadUrl } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Download",
   description:
-    "Download NUSARTA.apk untuk Android. Kelola keuangan pribadi dengan lebih mudah, aman, dan terorganisir bersama NUSARTA.",
+    "Download aplikasi NUSARTA untuk Android. NUSARTA (Nusa Arta) membantu mengelola keuangan pribadi dengan lebih mudah, aman, dan terorganisir.",
   alternates: canonicalMetadata("/download"),
 };
 

@@ -10,7 +10,7 @@ import { CTASection } from "@/components/CTASection";
 export const metadata: Metadata = {
   title: "NUSARTA — Keuanganmu, Dalam Kendalimu",
   description:
-    "Aplikasi pengelola keuangan pribadi untuk mencatat pemasukan, pengeluaran, budget, saldo, dan tujuan keuangan dengan mudah.",
+    "NUSARTA (Nusa Arta) adalah aplikasi finance dan pengelola keuangan pribadi untuk mencatat pemasukan, pengeluaran, budget, saldo, dan tujuan keuangan dengan mudah.",
   alternates: canonicalMetadata("/"),
 };
 

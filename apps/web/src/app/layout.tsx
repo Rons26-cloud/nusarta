@@ -29,6 +29,13 @@ const baseMetadata = {
     template: "%s — NUSARTA",
   },
   description: siteConfig.description,
+  keywords: [
+    "NUSARTA",
+    "Nusa Arta",
+    "NUSARTA finance",
+    "NUSARTA keuangan",
+    "aplikasi NUSARTA",
+  ],
 };
 
 export const metadata: Metadata = {
@@ -42,11 +49,13 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     url: url,
     locale: "id_ID",
+    images: [{ url: "/hero.png", alt: "NUSARTA - aplikasi keuangan pribadi" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "NUSARTA — Keuanganmu, Dalam Kendalimu",
     description: siteConfig.description,
+    images: ["/hero.png"],
   },
   robots: {
     index: true,
