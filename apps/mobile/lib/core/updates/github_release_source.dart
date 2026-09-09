@@ -32,7 +32,10 @@ class GithubReleaseSource implements UpdateSource {
     final value = tag.replaceFirst(RegExp(r'^v', caseSensitive: false), '');
     return RegExp(r'^\d+\.\d+\.\d+$').hasMatch(value) ? value : null;
   }
-  static bool _isHttps(Object? value) => value is String && Uri.tryParse(value)?.scheme == 'https';
+  static bool _isHttps(Object? value) {
+    final uri = value is String ? Uri.tryParse(value) : null;
+    return uri?.scheme == 'https' && uri?.host == 'github.com';
+  }
 }
 
 int compareVersions(String left, String right) {
