@@ -6,13 +6,14 @@ import sitemap from "../../app/sitemap";
 afterEach(() => vi.unstubAllEnvs());
 
 describe("public deployment URLs", () => {
-  it("does not invent a download or publish localhost SEO when unconfigured", () => {
+  it("uses the declared production origin when the build variable is absent", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
     vi.stubEnv("NEXT_PUBLIC_DOWNLOAD_URL", "");
-    expect(siteUrl()).toBe("");
-    expect(canonicalMetadata("/download")).toBeUndefined();
-    expect(sitemap()).toEqual([]);
-    expect(robots().sitemap).toBeUndefined();
+    expect(siteUrl()).toBe("https://nusarta.nusarta-official.workers.dev");
+    expect(canonicalMetadata("/")).toEqual({ canonical: "/" });
+    expect(canonicalMetadata("/download")).toEqual({ canonical: "https://nusarta.nusarta-official.workers.dev/download" });
+    expect(sitemap()[0].url).toBe("https://nusarta.nusarta-official.workers.dev");
+    expect(robots().sitemap).toBe("https://nusarta.nusarta-official.workers.dev/sitemap.xml");
     expect(releaseDownloadUrl()).toBeNull();
   });
 
@@ -29,6 +30,6 @@ describe("public deployment URLs", () => {
     vi.stubEnv("NEXT_PUBLIC_DOWNLOAD_URL", value);
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", value);
     expect(releaseDownloadUrl()).toBeNull();
-    expect(siteUrl()).toBe("");
+    expect(siteUrl()).toBe("https://nusarta.nusarta-official.workers.dev");
   });
 });

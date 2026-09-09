@@ -1,6 +1,8 @@
 import { siteConfig as brandSiteConfig } from "@nusarta/config";
 export { navItems, footerNav, socialLinks } from "@nusarta/config";
 
+const productionOrigin = "https://nusarta.nusarta-official.workers.dev";
+
 function publicHttpsUrl(value: string | undefined): string | null {
   if (!value?.trim()) return null;
   try {
@@ -15,14 +17,16 @@ function publicHttpsUrl(value: string | undefined): string | null {
 
 export function siteUrl(): string {
   const url = publicHttpsUrl(process.env.NEXT_PUBLIC_SITE_URL);
-  return url ? new URL(url).origin : "";
+  return url ? new URL(url).origin : productionOrigin;
 }
 
 export const siteConfig = { ...brandSiteConfig, url: siteUrl() };
 
 export function canonicalMetadata(path: string) {
   const origin = siteUrl();
-  return origin ? { canonical: new URL(path, origin).href } : undefined;
+  return origin
+    ? { canonical: path === "/" ? "/" : new URL(path, origin).href }
+    : undefined;
 }
 
 export function releaseDownloadUrl(): string | null {
