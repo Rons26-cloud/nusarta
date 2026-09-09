@@ -1,0 +1,25 @@
+{
+  "name": "nusarta",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NUSARTA — Personal Finance Platform",
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@nusarta/web",
+    "build": "npm run build --workspace=@nusarta/web",
+    "lint": "npm run lint --workspace=@nusarta/web",
+    "typecheck": "npm run typecheck --workspace=@nusarta/web",
+    "test": "npm run test --workspace=@nusarta/web",
+    "web:dev": "npm run dev --workspace=@nusarta/web",
+    "web:build": "npm run build --workspace=@nusarta/web",
+    "web:lint": "npm run lint --workspace=@nusarta/web",
+    "web:typecheck": "npm run typecheck --workspace=@nusarta/web",
+    "web:test": "npm run test --workspace=@nusarta/web"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

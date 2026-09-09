@@ -1,0 +1,23 @@
+.phone {
+  /* Product previews always show the light app appearance. */
+  color-scheme: light;
+  --background: 255 255 255;
+  --foreground: 8 46 39;
+  --card: 255 255 255;
+  --muted: 240 244 240;
+  --muted-foreground: 78 99 90;
+  --border: 204 216 207;
+  --brand: 7 92 67;
+  --positive: 6 109 73;
+  --negative: 177 48 47;
+  width: 100%;
+  max-width: 260px;
+  min-width: 0;
+  margin-inline: auto;
+}
+@media (min-width: 640px) {
+  .phone { max-width: 300px; }
+}
+@media (min-width: 1024px) {
+  .phone { max-width: 300px; }
+}

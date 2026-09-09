@@ -1,0 +1,41 @@
+.hero {
+  position: relative;
+  aspect-ratio: 1536 / 1024;
+  container-type: inline-size;
+}
+
+/* One image-relative anchor at every viewport size. */
+.cta {
+  position: absolute;
+  left: 4%;
+  top: 63.5%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: clamp(0px, 1.5625cqw, 18px);
+}
+
+/* No fixed minimum: the controls scale with the artwork on small screens. */
+.button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: clamp(0px, 0.78125cqw, 8px);
+  height: clamp(0px, 4.6875cqw, 52px);
+  padding: 0 clamp(0px, 1.953125cqw, 24px);
+  font-size: clamp(0px, 1.3671875cqw, 16px);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.secondary {
+  border-width: 1px;
+  padding-inline: clamp(0px, 1.5625cqw, 20px);
+}
+
+.icon {
+  flex-shrink: 0;
+  width: clamp(0px, 1.5625cqw, 20px);
+  height: clamp(0px, 1.5625cqw, 20px);
+}

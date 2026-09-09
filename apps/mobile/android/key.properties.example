@@ -1,0 +1,10 @@
+# TODO: Fill in production signing credentials. DO NOT COMMIT this file.
+# Copy key.properties.example to key.properties and paste real values.
+#
+# The release build signs with debug keys until a real keystore is created.
+# See docs/RELEASE.md -> "Signing setup" and docs/RELEASE_CHECKLIST.md.
+
+storePassword=
+keyPassword=
+keyAlias=
+storeFile=

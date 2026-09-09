@@ -1,0 +1,41 @@
+name: Mobile — Format, Analyze, Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.24.3"
+
+      - name: Enable Android licenses
+        run: |
+          flutter config --no-analytics
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Format check
+        run: dart format --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
