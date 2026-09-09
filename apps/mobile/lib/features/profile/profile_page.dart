@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/security/secure_store.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/update_provider.dart';
+import '../../core/updates/update_models.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -113,6 +116,23 @@ class ProfilePage extends ConsumerWidget {
                     context: context,
                     builder: (_) => const _AboutDialog(),
                   ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.system_update_outlined),
+                  title: const Text('Periksa Pembaruan'),
+                  onTap: () async {
+                    final state = await ref.read(updateControllerProvider).check(force: true);
+                    if (!context.mounted) return;
+                    if (state.status == UpdateStatus.updateAvailable && state.release != null) {
+                      showDialog(context: context, builder: (_) => AlertDialog(
+                        title: const Text('Pembaruan Tersedia'),
+                        content: Text('NUSARTA v${state.release!.version}\n\n${state.release!.releaseNotes}'),
+                        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Nanti')), ElevatedButton(onPressed: () { launchUrl(Uri.parse(state.release!.apkDownloadUrl), mode: LaunchMode.externalApplication); Navigator.pop(context); }, child: const Text('Update Sekarang'))],
+                      ));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.status == UpdateStatus.error ? 'Tidak dapat memeriksa pembaruan. Coba lagi.' : 'Anda menggunakan versi terbaru.')));
+                    }
+                  },
                 ),
               ],
             ),

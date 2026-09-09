@@ -1,0 +1,33 @@
+name: Mobile Release
+on:
+  push:
+    tags: ['v*.*.*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: apps/mobile } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.24.3', channel: stable }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - run: flutter pub get
+      - run: dart format --set-exit-if-changed lib test
+      - run: flutter analyze
+      - run: flutter test
+      - name: Validate tag version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION="$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)"
+          test "$TAG" = "$VERSION"
+      - name: Build signed APK
+        run: flutter build apk --release
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      - run: cp build/app/outputs/flutter-apk/app-release.apk NUSARTA.apk && sha256sum NUSARTA.apk > SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: apps/mobile/NUSARTA.apk,apps/mobile/SHA256SUMS.txt

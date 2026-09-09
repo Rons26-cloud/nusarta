@@ -8,6 +8,7 @@ import 'core/security/pin_service.dart';
 import 'core/security/secure_store.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/theme_provider.dart';
+import 'providers/update_provider.dart';
 
 class NusartaApp extends ConsumerStatefulWidget {
   const NusartaApp({super.key});
@@ -22,6 +23,11 @@ class _NusartaAppState extends ConsumerState<NusartaApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(seconds: 2), () {
+        if (mounted) ref.read(updateControllerProvider).check();
+      });
+    });
   }
 
   @override
