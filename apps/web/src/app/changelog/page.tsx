@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import { Plus, Wrench, CheckCircle2 } from "lucide-react";
 import { PageHero } from "@/components/PageHero";
 import { Reveal } from "@/components/Reveal";
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
   title: "Changelog",
   description:
     "Catatan rilis NUSARTA: fitur baru, perbaikan, dan peningkatan pada setiap versi.",
-  alternates: { canonical: "/changelog" },
+  alternates: canonicalMetadata("/changelog"),
 };
 
 const hasItems = (list: string[]) => list.length > 0;

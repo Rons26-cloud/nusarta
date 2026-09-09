@@ -3,6 +3,7 @@ import { siteUrl } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const url = siteUrl().replace(/\/$/, "");
+  if (!url) return [];
   const routes = [
     "",
     "/features",

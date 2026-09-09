@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import { Fingerprint, ShieldCheck, Smartphone, Lock } from "lucide-react";
 import { PageHero } from "@/components/PageHero";
 import { SectionHeading } from "@/components/SectionHeading";
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
   title: "How It Works",
   description:
     "Cara kerja NUSARTA: buat akun, tambahkan akun keuangan, catat pemasukan dan pengeluaran secara manual, lalu pantau laporan otomatis.",
-  alternates: { canonical: "/how-it-works" },
+  alternates: canonicalMetadata("/how-it-works"),
 };
 
 export default function HowItWorksPage() {

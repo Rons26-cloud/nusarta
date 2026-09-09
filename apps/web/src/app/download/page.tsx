@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -9,25 +10,25 @@ import {
   Calendar,
   Hash,
 } from "lucide-react";
-import { currentRelease, getReleaseDownloadUrl } from "@nusarta/config";
+import { currentRelease } from "@nusarta/config";
 import { PageHero } from "@/components/PageHero";
 import { Reveal } from "@/components/Reveal";
 import { CTASection } from "@/components/CTASection";
 import { releaseChannels } from "@/lib/data";
 
-import { playStoreUrl } from "@/lib/site";
+import { playStoreUrl, releaseDownloadUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Download",
   description:
     "Download NUSARTA.apk untuk Android. Kelola keuangan pribadi dengan lebih mudah, aman, dan terorganisir bersama NUSARTA.",
-  alternates: { canonical: "/download" },
+  alternates: canonicalMetadata("/download"),
 };
 
 export default function DownloadPage() {
-  const downloadUrl = getReleaseDownloadUrl();
+  const downloadUrl = releaseDownloadUrl();
   const playsstore = playStoreUrl();
-  const downloadAvailable = Boolean(currentRelease.checksumSha256);
+  const downloadAvailable = Boolean(downloadUrl && currentRelease.checksumSha256);
 
   return (
     <>
@@ -126,7 +127,7 @@ export default function DownloadPage() {
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   {downloadAvailable ? (
                     <a
-                      href={downloadUrl}
+                      href={downloadUrl ?? undefined}
                       download="NUSARTA.apk"
                       className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-nusa-gold px-5 py-3 text-sm font-semibold text-nusa-deepest shadow-lg shadow-nusa-primary/20 transition-colors hover:bg-nusa-goldlight focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand sm:text-base"
                     >

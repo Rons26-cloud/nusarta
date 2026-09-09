@@ -6,6 +6,11 @@ node_modules/
 apps/web/.next/
 apps/web/.next-dev/
 apps/web/out/
+.open-next/
+.wrangler/
+.dev.vars
+.dev.vars.*
+*.apk
 apps/web/next-env.d.ts
 apps/web/tsconfig.tsbuildinfo
 

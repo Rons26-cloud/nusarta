@@ -10,6 +10,11 @@
   "scripts": {
     "dev": "npm run dev --workspace=@nusarta/web",
     "build": "npm run build --workspace=@nusarta/web",
+    "build:worker": "npm run build:worker --workspace=@nusarta/web",
+    "preview:worker": "npm run preview:worker --workspace=@nusarta/web",
+    "deploy:worker": "npm run deploy:worker --workspace=@nusarta/web",
+    "release:metadata": "node scripts/generate-apk-metadata.mjs",
+    "release:verify": "node scripts/verify-apk-metadata.mjs",
     "lint": "npm run lint --workspace=@nusarta/web",
     "typecheck": "npm run typecheck --workspace=@nusarta/web",
     "test": "npm run test --workspace=@nusarta/web",

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import { PageHero } from "@/components/PageHero";
 import { SectionHeading } from "@/components/SectionHeading";
 import { Reveal } from "@/components/Reveal";
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   title: "About",
   description:
     "Tentang NUSARTA: filosofi NUSA (Nusantara) dan ARTA (harta) — platform yang membantu memahami dan mengendalikan keuangan pribadi.",
-  alternates: { canonical: "/about" },
+  alternates: canonicalMetadata("/about"),
 };
 
 const philosophy = [

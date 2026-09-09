@@ -33,6 +33,7 @@ const baseMetadata = {
 
 export const metadata: Metadata = {
   ...baseMetadata,
+  metadataBase: url ? new URL(url) : undefined,
   alternates: url ? { canonical: url } : undefined,
   openGraph: {
     type: "website",

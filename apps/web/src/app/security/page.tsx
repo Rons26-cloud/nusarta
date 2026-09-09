@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import { PageHero } from "@/components/PageHero";
 import { SectionHeading } from "@/components/SectionHeading";
 import { Reveal } from "@/components/Reveal";
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
   title: "Security & Privacy",
   description:
     "NUSARTA menggunakan autentikasi aman, PIN terenkripsi, dukungan biometrik, dan kebijakan akses data per pengguna untuk melindungi catatan keuanganmu.",
-  alternates: { canonical: "/security" },
+  alternates: canonicalMetadata("/security"),
 };
 
 const technicalPoints = [

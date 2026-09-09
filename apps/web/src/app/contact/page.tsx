@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import { Mail, MessagesSquare, FileQuestion } from "lucide-react";
 import Link from "next/link";
 import { PageHero } from "@/components/PageHero";
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
   title: "Contact",
   description:
     "Hubungi tim NUSARTA untuk pertanyaan seputar akun, masalah aplikasi, keamanan, dan masukan.",
-  alternates: { canonical: "/contact" },
+  alternates: canonicalMetadata("/contact"),
 };
 
 export default function ContactPage() {

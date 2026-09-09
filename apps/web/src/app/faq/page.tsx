@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import { PageHero } from "@/components/PageHero";
 import { Reveal } from "@/components/Reveal";
 import { CTASection } from "@/components/CTASection";
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
   title: "FAQ",
   description:
     "Pertanyaan umum seputar NUSARTA: cara kerja, keamanan, PIN, biometrik, penyimpanan data, dan rencana connected finance.",
-  alternates: { canonical: "/faq" },
+  alternates: canonicalMetadata("/faq"),
 };
 
 const faqJsonLd = {

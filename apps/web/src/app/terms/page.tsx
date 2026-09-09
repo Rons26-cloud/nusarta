@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import { LegalLayout, LegalSection } from "@/components/LegalLayout";
 
 export const metadata: Metadata = {
   title: "Terms",
   description:
     "Syarat dan ketentuan penggunaan NUSARTA, aplikasi pencatatan keuangan pribadi.",
-  alternates: { canonical: "/terms" },
+  alternates: canonicalMetadata("/terms"),
 };
 
 export default function TermsPage() {

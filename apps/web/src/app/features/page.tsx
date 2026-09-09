@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import { PageHero } from "@/components/PageHero";
 import { SectionHeading } from "@/components/SectionHeading";
 import { Reveal } from "@/components/Reveal";
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   title: "Features",
   description:
     "Jelajahi fitur NUSARTA: dashboard keuangan, catatan transaksi, akun keuangan, budget, financial goals, laporan otomatis, kategori, dan pencarian.",
-  alternates: { canonical: "/features" },
+  alternates: canonicalMetadata("/features"),
 };
 
 export default function FeaturesPage() {

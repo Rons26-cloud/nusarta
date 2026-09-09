@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 
 import { Hero } from "@/components/Hero";
 import { FeatureGrid } from "@/components/FeatureGrid";
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
   title: "NUSARTA — Keuanganmu, Dalam Kendalimu",
   description:
     "Aplikasi pengelola keuangan pribadi untuk mencatat pemasukan, pengeluaran, budget, saldo, dan tujuan keuangan dengan mudah.",
-  alternates: { canonical: "/" },
+  alternates: canonicalMetadata("/"),
 };
 
 export default function HomePage() {

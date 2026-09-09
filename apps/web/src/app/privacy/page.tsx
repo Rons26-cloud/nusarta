@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import { LegalLayout, LegalSection } from "@/components/LegalLayout";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
     "Kebijakan privasi NUSARTA: bagaimana data akun, catatan keuangan, dan pengaturan aplikasi dikelola dan dilindungi.",
-  alternates: { canonical: "/privacy" },
+  alternates: canonicalMetadata("/privacy"),
 };
 
 export default function PrivacyPage() {

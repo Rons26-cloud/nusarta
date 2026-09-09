@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { canonicalMetadata } from "@/lib/site";
 import { PageHero } from "@/components/PageHero";
 import { Reveal } from "@/components/Reveal";
 import { CTASection } from "@/components/CTASection";
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   title: "Roadmap",
   description:
     "Roadmap pengembangan NUSARTA B: personal finance, smart finance, hingga connected finance dengan integrasi resmi.",
-  alternates: { canonical: "/roadmap" },
+  alternates: canonicalMetadata("/roadmap"),
 };
 
 const statusStyle = {
