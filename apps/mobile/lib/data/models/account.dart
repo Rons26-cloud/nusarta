@@ -47,8 +47,9 @@ enum ConnectionStatus {
 
   String get dbValue => name;
 
-  static ConnectionStatus fromDb(String value) => ConnectionStatus.values
-      .firstWhere((s) => s.name == value, orElse: () => ConnectionStatus.manual);
+  static ConnectionStatus fromDb(String value) =>
+      ConnectionStatus.values.firstWhere((s) => s.name == value,
+          orElse: () => ConnectionStatus.manual);
 }
 
 /// V1 accounts are manual. `provider`/`externalId`/`isLinked` are reserved

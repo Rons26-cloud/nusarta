@@ -206,9 +206,7 @@ class _PinUnlockPageState extends ConsumerState<PinUnlockPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _locked
-                        ? 'Uji coba melebihi batas'
-                        : 'Masukkan PIN Anda',
+                    _locked ? 'Uji coba melebihi batas' : 'Masukkan PIN Anda',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white.withOpacity(0.7)),
                   ),

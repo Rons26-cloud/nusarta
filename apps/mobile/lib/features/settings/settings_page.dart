@@ -43,8 +43,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       } else if (widget.section == 'theme') {
         _pickTheme(context);
       } else {
-        final target = widget.section == 'biometric' ? _biometricKey.currentContext
-          : widget.section == 'auto-lock' ? _autoLockKey.currentContext : null;
+        final target = widget.section == 'biometric'
+            ? _biometricKey.currentContext
+            : widget.section == 'auto-lock'
+                ? _autoLockKey.currentContext
+                : null;
         if (target != null) Scrollable.ensureVisible(target);
       }
     });
@@ -141,7 +144,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 8),
           _SecurityActivitySection(),
           const SizedBox(height: 16),
-          Text('Kunci Otomatis', key: _autoLockKey,
+          Text('Kunci Otomatis',
+              key: _autoLockKey,
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Card(

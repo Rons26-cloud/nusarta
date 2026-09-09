@@ -66,15 +66,21 @@ android {
 
     buildTypes {
         release {
-            if (!hasReleaseKeystore) {
-                throw new GradleException('Production release signing is not configured. Provide android/key.properties and the referenced keystore.')
-            }
             signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
                     'proguard-rules.pro'
         }
+    }
+}
+
+// Check the scheduled tasks so debug builds do not require production signing.
+gradle.taskGraph.whenReady { taskGraph ->
+    if (!hasReleaseKeystore && taskGraph.allTasks.any {
+        it.project == project && it.name.contains('Release')
+    }) {
+        throw new GradleException('Production release signing is not configured. Provide android/key.properties and the referenced keystore.')
     }
 }
 

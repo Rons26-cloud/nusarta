@@ -1,4 +1,5 @@
 import { defineCloudflareConfig } from "@opennextjs/cloudflare/config";
 
-// No ISR or on-demand revalidation is used; no cache bucket is required.
+// Release pages are dynamic and use a bounded GitHub catalog Cache API cache.
+// No Next.js ISR bucket or queue is required.
 export default defineCloudflareConfig();

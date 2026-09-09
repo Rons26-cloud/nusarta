@@ -4,25 +4,27 @@ on:
     tags: ['v*.*.*']
 permissions:
   contents: write
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   release:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: apps/mobile } }
     steps:
       - uses: actions/checkout@v4
+      - name: Validate stable tag and Flutter version
+        run: node ../../scripts/validate-mobile-release.mjs "$GITHUB_REF_NAME" pubspec.yaml
       - uses: subosito/flutter-action@v2
         with: { flutter-version: '3.24.3', channel: stable }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
+      - name: Prepare compile-time configuration
+        run: cp lib/core/config/app_config.example.dart lib/core/config/app_config.dart
       - run: flutter pub get
-      - run: dart format --set-exit-if-changed lib test
-      - run: flutter analyze
+      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze --no-fatal-infos
       - run: flutter test
-      - name: Validate tag version
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          VERSION="$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)"
-          test "$TAG" = "$VERSION"
       - name: Restore Android signing files
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -30,23 +32,66 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          test -n "$ANDROID_KEYSTORE_BASE64"
-          test -n "$ANDROID_KEYSTORE_PASSWORD"
-          test -n "$ANDROID_KEY_ALIAS"
-          test -n "$ANDROID_KEY_PASSWORD"
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/nusarta-release.jks
-          cat > android/key.properties <<EOF
-          storePassword=$ANDROID_KEYSTORE_PASSWORD
-          keyPassword=$ANDROID_KEY_PASSWORD
-          keyAlias=$ANDROID_KEY_ALIAS
-          storeFile=../nusarta-release.jks
-          EOF
+          umask 077
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          names = ['ANDROID_KEYSTORE_BASE64', 'ANDROID_KEYSTORE_PASSWORD', 'ANDROID_KEY_ALIAS', 'ANDROID_KEY_PASSWORD']
+          if any(not os.environ.get(name) for name in names):
+              raise SystemExit('Production signing secrets are required.')
+          try:
+              keystore = base64.b64decode(''.join(os.environ[names[0]].split()), validate=True)
+              if not keystore:
+                  raise ValueError()
+          except Exception:
+              raise SystemExit('Production keystore encoding is invalid.') from None
+          # Escape Java Properties delimiters, whitespace and backslashes.
+          def prop(value):
+              return ''.join({'\\': '\\\\', '\n': '\\n', '\r': '\\r', '\t': '\\t'}.get(c, '\\' + c if c in ' :=#!' else c) for c in value)
+          Path('android/nusarta-release.jks').write_bytes(keystore)
+          values = {
+              'storePassword': os.environ['ANDROID_KEYSTORE_PASSWORD'],
+              'keyPassword': os.environ['ANDROID_KEY_PASSWORD'],
+              'keyAlias': os.environ['ANDROID_KEY_ALIAS'],
+              'storeFile': '../nusarta-release.jks',
+          }
+          Path('android/key.properties').write_text(''.join(k + '=' + prop(v) + '\n' for k, v in values.items()), encoding='utf-8')
+          PY
       - name: Build signed APK
-        run: flutter build apk --release
-      - run: cp build/app/outputs/flutter-apk/app-release.apk NUSARTA.apk && sha256sum NUSARTA.apk > SHA256SUMS.txt
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os, json, base64
+          key = os.environ.get('SUPABASE_ANON_KEY', '')
+          if os.environ.get('SUPABASE_URL') != 'https://ogdccbbwfktrvhnkorvt.supabase.co':
+              raise SystemExit('Set the public SUPABASE_URL repository variable for NUSARTA.')
+          public = key.startswith('sb_publishable_') and len(key) > 20
+          if key.startswith('eyJ'):
+              try:
+                  payload = key.split('.')[1]
+                  public = json.loads(base64.urlsafe_b64decode(payload + '=' * (-len(payload) % 4))).get('role') == 'anon'
+              except Exception:
+                  public = False
+          if not public:
+              raise SystemExit('Set SUPABASE_ANON_KEY to a public anon/publishable key only.')
+          PY
+          flutter build apk --release --dart-define="SUPABASE_URL=$SUPABASE_URL" --dart-define="SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY"
+      - name: Package release assets
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk NUSARTA.apk
+          sha256sum NUSARTA.apk > SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
-          files: apps/mobile/NUSARTA.apk,apps/mobile/SHA256SUMS.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            apps/mobile/NUSARTA.apk
+            apps/mobile/SHA256SUMS.txt
       - name: Remove temporary signing files
         if: always()
         run: rm -f android/key.properties android/nusarta-release.jks

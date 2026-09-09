@@ -6,6 +6,10 @@ import 'core/data/supabase_client.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SupabaseConfig.initialize();
+  try {
+    await SupabaseConfig.initialize().timeout(const Duration(seconds: 10));
+  } catch (_) {
+    debugPrint('Supabase initialization failed');
+  }
   runApp(const ProviderScope(child: NusartaApp()));
 }

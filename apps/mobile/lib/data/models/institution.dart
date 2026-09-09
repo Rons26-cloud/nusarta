@@ -36,7 +36,8 @@ class Institution {
         country: map['country'] as String? ?? 'ID',
         isActive: map['is_active'] as bool? ?? true,
         providerSupport:
-            (map['provider_support'] as Map?)?.cast<String, dynamic>() ?? const {},
+            (map['provider_support'] as Map?)?.cast<String, dynamic>() ??
+                const {},
       );
 
   Map<String, dynamic> toMap() => {

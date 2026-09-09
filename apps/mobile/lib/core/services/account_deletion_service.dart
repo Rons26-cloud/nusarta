@@ -33,7 +33,8 @@ abstract class AccountDeletionGateway {
 
   /// Re-authenticates (password). Refreshes the access JWT so the server's
   /// re-authentication freshness check (iat within 5 minutes) passes.
-  Future<void> reauthenticate({required String email, required String password});
+  Future<void> reauthenticate(
+      {required String email, required String password});
 
   /// Invokes the server-authoritative deletion for the current account.
   /// Must not accept an arbitrary user id.

@@ -49,16 +49,12 @@ class DeviceRepository {
       if (existing == null) {
         await SupabaseConfig.client.from(_table).insert(row);
       } else {
-        await SupabaseConfig.client
-            .from(_table)
-            .update({
-              'last_seen_at': row['last_seen_at'],
-              'platform': row['platform'],
-            })
-            .eq('id', existing['id'] as String);
+        await SupabaseConfig.client.from(_table).update({
+          'last_seen_at': row['last_seen_at'],
+          'platform': row['platform'],
+        }).eq('id', existing['id'] as String);
       }
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   static DevicePlatform _detectPlatform() {

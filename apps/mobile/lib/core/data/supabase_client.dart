@@ -11,12 +11,25 @@ import '../config/app_config.dart';
 class SupabaseConfig {
   SupabaseConfig._();
 
+  static bool _initialized = false;
+  static Object? _initializationError;
+
+  static bool get isInitialized => _initialized;
+  static Object? get initializationError => _initializationError;
+
   static Future<void> initialize() async {
     if (AppConfig.isConfigured) {
-      await Supabase.initialize(
-        url: AppConfig.supabaseUrl,
-        publishableKey: AppConfig.supabaseAnonKey,
-      );
+      try {
+        await Supabase.initialize(
+          url: AppConfig.supabaseUrl,
+          publishableKey: AppConfig.supabaseAnonKey,
+        );
+        _initialized = true;
+        _initializationError = null;
+      } catch (error) {
+        _initializationError = error;
+        rethrow;
+      }
     } else if (kDebugMode) {
       debugPrint(
         'AppConfig: SUPABASE_URL / SUPABASE_ANON_KEY not set. '

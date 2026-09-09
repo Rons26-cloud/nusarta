@@ -8,7 +8,7 @@ import {
   FileCheck,
   Smartphone,
   Calendar,
-  Hash,
+
 } from "lucide-react";
 import { currentRelease } from "@nusarta/config";
 import { PageHero } from "@/components/PageHero";
@@ -16,8 +16,11 @@ import { Reveal } from "@/components/Reveal";
 import { CTASection } from "@/components/CTASection";
 import { releaseChannels } from "@/lib/data";
 
-import { playStoreUrl, releaseDownloadUrl } from "@/lib/site";
-import { getLatestGithubRelease } from "@/lib/github-releases";
+import { playStoreUrl } from "@/lib/site";
+import { getGithubReleaseCatalog, apkSize, releaseDate, RELEASES_URL } from "@/lib/github-releases";
+import { ReleaseCard, ReleaseChecksum, ReleaseNotes } from "@/components/ReleaseCard";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Download",
@@ -27,11 +30,12 @@ export const metadata: Metadata = {
 };
 
 export default async function DownloadPage() {
-  const latestRelease = await getLatestGithubRelease();
-  const downloadUrl = latestRelease?.apkUrl ?? releaseDownloadUrl();
+  const { releases, status } = await getGithubReleaseCatalog();
+  const [latestRelease, ...previousReleases] = releases;
+  const downloadUrl = latestRelease?.apkUrl;
   const playsstore = playStoreUrl();
   const downloadAvailable = Boolean(downloadUrl);
-  const displayedVersion = latestRelease ? `Versi ${latestRelease.version}` : `Versi ${currentRelease.version}`;
+  const displayedVersion = latestRelease ? `Versi ${latestRelease.version}` : "Download belum tersedia";
 
   return (
     <>
@@ -66,17 +70,16 @@ export default async function DownloadPage() {
                     </p>
                     <p className="font-display text-2xl sm:text-3xl font-bold text-foreground">
                       {displayedVersion}
-                      {currentRelease.buildNumber !== "1" &&
-                        `+${currentRelease.buildNumber}`}
+
                     </p>
                   </div>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-nusa-primary/10 px-3 py-1.5 text-xs font-semibold text-brand">
                     <span className="h-1.5 w-1.5 rounded-full bg-nusa-primary" />
-                    Release
+                    {latestRelease ? "Versi terkini" : "Belum tersedia"}
                   </span>
                 </div>
 
-                <p className="mt-4 text-sm text-muted-foreground">Nama file: <span className="font-medium text-foreground">{currentRelease.apkFileName}</span></p>
+                <p className="mt-4 text-sm text-muted-foreground">Nama file: <span className="font-medium text-foreground">NUSARTA.apk</span></p>
                 <p className="mt-1 text-sm text-muted-foreground">Platform: Android <span aria-hidden="true">&middot;</span> Format: APK</p>
                 <dl className="mt-8 grid grid-cols-1 gap-x-6 gap-y-5 text-sm sm:grid-cols-2">
                   <div className="flex items-center gap-2.5">
@@ -86,7 +89,7 @@ export default async function DownloadPage() {
                         Rilis
                       </dt>
                       <dd className="font-medium text-foreground">
-                        {currentRelease.releaseDate}
+                        {latestRelease ? releaseDate(latestRelease.publishedAt) : "-"}
                       </dd>
                     </div>
                   </div>
@@ -108,23 +111,11 @@ export default async function DownloadPage() {
                         Ukuran berkas
                       </dt>
                       <dd className="font-medium text-foreground">
-                        {currentRelease.fileSizeMb === "TBD" || !currentRelease.fileSizeMb
-                          ? "—"
-                          : currentRelease.fileSizeMb}
+                        {latestRelease ? apkSize(latestRelease.apkSize) : "-"}
                       </dd>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    <Hash aria-hidden="true" className="h-4 w-4 shrink-0 text-accent-foreground" />
-                    <div>
-                      <dt className="text-xs text-muted-foreground">
-                        Build
-                      </dt>
-                      <dd className="font-medium text-foreground">
-                        {currentRelease.buildNumber}
-                      </dd>
-                    </div>
-                  </div>
+
                 </dl>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -157,17 +148,11 @@ export default async function DownloadPage() {
                   Lihat riwayat versi
                 </Link>
 
-                {currentRelease.checksumSha256 && (
-                  <div className="mt-8 rounded-xl border border-border bg-muted p-4">
-                    <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <ShieldCheck aria-hidden="true" className="h-4 w-4 text-brand" />
-                      Keamanan File
-                    </h2>
-                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">SHA-256 berikut dapat digunakan untuk mencocokkan integritas NUSARTA.apk yang diunduh.</p>
-                    <p className="mt-2 break-all font-mono text-xs text-muted-foreground">
-                      {currentRelease.checksumSha256}
-                    </p>
-                  </div>
+                {latestRelease ? <ReleaseChecksum release={latestRelease} /> : (
+                  <p role="status" className="mt-5 text-sm text-muted-foreground">
+                    {status === "unavailable" ? "Data rilis belum dapat diperbarui. Silakan coba lagi nanti." : "Belum ada rilis stabil dengan APK yang tersedia."}{" "}
+                    <a href={RELEASES_URL} className="font-semibold text-brand underline">Lihat GitHub Releases</a>
+                  </p>
                 )}
               </div>
               <section aria-labelledby="install-heading" className="mt-6 rounded-2xl border border-border bg-card p-5 sm:p-8">
@@ -223,19 +208,9 @@ export default async function DownloadPage() {
                   <h2 className="font-semibold text-foreground">
                     Catatan rilis
                   </h2>
-                  <ul className="mt-4 space-y-2.5">
-                    {currentRelease.notes.map((note) => (
-                      <li
-                        key={note}
-                        className="flex items-start gap-2 text-sm text-muted-foreground"
-                      >
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-nusa-accent" />
-                        {note}
-                      </li>
-                    ))}
-                  </ul>
+                  {latestRelease ? <ReleaseNotes release={latestRelease} /> : <p className="mt-4 text-sm text-muted-foreground">Catatan rilis belum tersedia.</p>}
                   <Link
-                    href="/changelog"
+                    href="/releases"
                     className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand hover:underline"
                   >
                     Lihat changelog lengkap
@@ -281,7 +256,14 @@ export default async function DownloadPage() {
         </div>
       </section>
 
-      <CTASection directDownload />
+      <section aria-labelledby="previous-releases" className="pb-16 lg:pb-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <h2 id="previous-releases" className="font-display text-3xl font-bold text-foreground">Versi Lainnya</h2>
+          <p className="mt-3 text-muted-foreground">Unduh versi sebelumnya dan lihat catatan perubahannya.</p>
+          {previousReleases.length > 0 ? <div className="mt-8 grid gap-6 lg:grid-cols-2">{previousReleases.map((release) => <ReleaseCard key={release.tag} release={release} />)}</div> : <p className="mt-6 rounded-2xl border border-border bg-card p-6 text-muted-foreground">{status === "unavailable" ? "Riwayat versi belum dapat dimuat. Silakan coba lagi nanti." : "Belum ada versi sebelumnya yang tersedia."}</p>}
+        </div>
+      </section>
+      <CTASection directDownload release={latestRelease ?? null} />
     </>
   );
 }

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Download } from "lucide-react";
 import { currentRelease } from "@nusarta/config";
-import { releaseDownloadUrl } from "@/lib/site";
+import type { GithubRelease } from "@/lib/github-releases";
 import { PhoneMockup } from "./PhoneMockup";
 
-export function CTASection({ directDownload = false }: { directDownload?: boolean }) {
-  const downloadUrl = directDownload ? releaseDownloadUrl() : null;
+export function CTASection({ directDownload = false, release }: { directDownload?: boolean; release?: GithubRelease | null }) {
+  const downloadUrl = directDownload ? release?.apkUrl : null;
   const DownloadLink = downloadUrl ? "a" : Link;
   return (
     <section aria-labelledby="download-heading" className="border-y border-border bg-muted py-16 lg:py-24">
@@ -22,7 +22,7 @@ export function CTASection({ directDownload = false }: { directDownload?: boolea
             Download NUSARTA
           </DownloadLink>
           <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:text-sm">
-            <span>Version {currentRelease.version}</span>
+            {release && <span>Version {release.version}</span>}
             <span>Android {currentRelease.minimumAndroidVersion}+</span>
           </div>
         </div>

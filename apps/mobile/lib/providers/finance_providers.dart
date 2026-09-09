@@ -186,7 +186,8 @@ class GoalsController {
 
 // Feature flags: gate future capabilities. V1 defaults are all OFF except
 // the informational institution catalog.
-final featureFlagProvider = Provider<FeatureFlags>((ref) => FeatureFlags.instance);
+final featureFlagProvider =
+    Provider<FeatureFlags>((ref) => FeatureFlags.instance);
 
 // Institution catalog (informational metadata only in V1).
 final institutionsProvider = FutureProvider<List<Institution>>((ref) async {

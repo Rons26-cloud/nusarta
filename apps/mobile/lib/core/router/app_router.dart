@@ -1,7 +1,10 @@
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/data/supabase_client.dart';
 import '../../core/security/auto_lock_service.dart';
+import '../../core/startup/startup_gate.dart';
+import '../../features/startup/startup_error_page.dart';
 import '../../core/security/pin_service.dart';
 import '../../features/accounts/accounts_page.dart';
 import '../../features/auth/login_page.dart';
@@ -28,11 +31,16 @@ final router = GoRouter(
   initialLocation: '/splash',
   redirect: (context, state) async {
     // Branding only; the next route still passes every security gate below.
-    if (state.matchedLocation == '/splash') return null;
+    if (state.matchedLocation == '/splash' ||
+        state.matchedLocation == '/startup-error') return null;
+    if (!AppConfig.isConfigured || !SupabaseConfig.isInitialized) {
+      return '/startup-error';
+    }
     final loggedIn = SupabaseConfig.client.auth.currentUser != null;
     final location = state.matchedLocation;
 
-    final hasPin = await PinService.isSet;
+    final hasPin = await startupBool(PinService.isSet);
+    if (hasPin == null) return '/startup-error';
 
     // Signed out.
     if (!loggedIn) {
@@ -55,7 +63,8 @@ final router = GoRouter(
 
     // Auto-lock.
     if (location != '/lock') {
-      final shouldLock = await AutoLockService.shouldLock();
+      final shouldLock = await startupBool(AutoLockService.shouldLock());
+      if (shouldLock == null) return '/startup-error';
       if (shouldLock) return '/lock';
     }
 
@@ -63,6 +72,8 @@ final router = GoRouter(
   },
   routes: [
     GoRoute(path: '/splash', builder: (_, __) => const SplashPage()),
+    GoRoute(
+        path: '/startup-error', builder: (_, __) => const StartupErrorPage()),
     GoRoute(path: '/welcome', builder: (_, __) => const WelcomePage()),
     GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
     GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
@@ -77,7 +88,10 @@ final router = GoRouter(
     GoRoute(path: '/goals', builder: (_, __) => const GoalsPage()),
     GoRoute(path: '/search', builder: (_, __) => const SearchPage()),
     GoRoute(path: '/profile', builder: (_, __) => const ProfilePage()),
-    GoRoute(path: '/settings', builder: (_, state) => SettingsPage(section: state.uri.queryParameters['section'])),
+    GoRoute(
+        path: '/settings',
+        builder: (_, state) =>
+            SettingsPage(section: state.uri.queryParameters['section'])),
     GoRoute(path: '/devices', builder: (_, __) => const DevicesPage()),
     GoRoute(
         path: '/notifications', builder: (_, __) => const NotificationsPage()),

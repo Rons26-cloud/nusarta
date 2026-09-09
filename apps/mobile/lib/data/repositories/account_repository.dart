@@ -75,7 +75,9 @@ class AccountRepository {
   static Future<void> clearPrimary(String userId) async {
     await SupabaseConfig.client
         .from(_table)
-        .update({'is_primary': false}).eq('user_id', userId).eq('is_primary', true);
+        .update({'is_primary': false})
+        .eq('user_id', userId)
+        .eq('is_primary', true);
   }
 
   static Future<void> update(Account account) async {

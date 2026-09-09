@@ -9,10 +9,8 @@ enum SecurityEventCategory {
   String get dbValue => name;
 
   static SecurityEventCategory fromDb(String value) =>
-      SecurityEventCategory.values
-              .where((c) => c.name == value)
-              .firstOrNull ??
-          SecurityEventCategory.system;
+      SecurityEventCategory.values.where((c) => c.name == value).firstOrNull ??
+      SecurityEventCategory.system;
 }
 
 class SecurityEvent {
@@ -37,7 +35,8 @@ class SecurityEvent {
   factory SecurityEvent.fromMap(Map<String, dynamic> map) => SecurityEvent(
         id: (map['id'] as num).toInt(),
         userId: map['user_id'] as String,
-        category: SecurityEventCategory.fromDb(map['event_category'] as String? ?? 'system'),
+        category: SecurityEventCategory.fromDb(
+            map['event_category'] as String? ?? 'system'),
         eventType: map['event_type'] as String? ?? '',
         severity: (map['severity'] as num?)?.toInt() ?? 0,
         metadata:

@@ -23,6 +23,8 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
   final _lastFour = TextEditingController();
   Object? _selected;
   bool _isPrimary = false;
+  bool _saving = false;
+  String? _saveError;
   String? _lastFourError;
 
   @override
@@ -63,6 +65,7 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final name = _name.text.trim();
     final lastFourInput = _lastFour.text.trim();
     if (name.isEmpty) return;
@@ -72,20 +75,34 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
       return;
     }
 
-    final institution =
-        _selected is Institution ? _selected as Institution : null;
-    final controller = ref.read(accountsControllerProvider);
-    await controller.createAccount(
-      name: name,
-      type: _typeFor,
-      balance: double.tryParse(_balance.text.replaceAll(',', '').trim()) ?? 0,
-      institutionId: institution?.id,
-      displayName: name,
-      lastFour: lastFourInput.isEmpty ? null : lastFourInput,
-      maskedAccountNumber: lastFourInput.isEmpty ? null : '•••• $lastFourInput',
-      isPrimary: _isPrimary,
-    );
-    if (mounted) Navigator.pop(context);
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    try {
+      final institution =
+          _selected is Institution ? _selected as Institution : null;
+      final controller = ref.read(accountsControllerProvider);
+      await controller.createAccount(
+        name: name,
+        type: _typeFor,
+        balance: double.tryParse(_balance.text.replaceAll(',', '').trim()) ?? 0,
+        institutionId: institution?.id,
+        displayName: name,
+        lastFour: lastFourInput.isEmpty ? null : lastFourInput,
+        maskedAccountNumber:
+            lastFourInput.isEmpty ? null : '•••• $lastFourInput',
+        isPrimary: _isPrimary,
+      );
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _saveError =
+            'Akun belum berhasil disimpan. Periksa koneksi dan coba lagi.');
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -251,9 +268,21 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
               ),
             ),
             const SizedBox(height: 20),
+            if (_saveError != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    _saveError!,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
+              ),
             FilledButton(
-              onPressed: _name.text.trim().isEmpty ? null : _save,
-              child: const Text('Simpan Akun'),
+              onPressed: _saving || _name.text.trim().isEmpty ? null : _save,
+              child: Text(_saving ? 'Menyimpan...' : 'Simpan Akun'),
             ),
           ],
         ),

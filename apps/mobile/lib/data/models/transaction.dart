@@ -7,8 +7,9 @@ enum TransactionStatus {
   reversed,
   cancelled;
 
-  static TransactionStatus fromDb(String value) => TransactionStatus.values
-      .firstWhere((s) => s.name == value, orElse: () => TransactionStatus.completed);
+  static TransactionStatus fromDb(String value) =>
+      TransactionStatus.values.firstWhere((s) => s.name == value,
+          orElse: () => TransactionStatus.completed);
 }
 
 enum TransactionSource {
@@ -74,7 +75,8 @@ class Transaction {
           orElse: () => TransactionKind.expense,
         ),
         source: TransactionSource.fromDb(map['source'] as String? ?? 'manual'),
-        status: TransactionStatus.fromDb(map['status'] as String? ?? 'completed'),
+        status:
+            TransactionStatus.fromDb(map['status'] as String? ?? 'completed'),
         amount: (map['amount'] as num).toDouble(),
         note: map['note'] as String?,
         title: map['title'] as String?,

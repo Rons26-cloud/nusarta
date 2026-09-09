@@ -64,9 +64,13 @@ class ProfilePage extends ConsumerWidget {
                   (Icons.fingerprint, 'Biometrik', 'biometric'),
                   (Icons.timer_outlined, 'Kunci Otomatis', 'auto-lock'),
                   (Icons.brightness_6_outlined, 'Tema', 'theme'),
-                ]) ListTile(leading: Icon(item.$1), title: Text(item.$2),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/settings?section='+item.$3)),
+                ])
+                  ListTile(
+                      leading: Icon(item.$1),
+                      title: Text(item.$2),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          context.push('/settings?section=' + item.$3)),
                 ListTile(
                   leading: const Icon(Icons.notifications_outlined),
                   title: const Text('Notifikasi'),
@@ -121,16 +125,39 @@ class ProfilePage extends ConsumerWidget {
                   leading: const Icon(Icons.system_update_outlined),
                   title: const Text('Periksa Pembaruan'),
                   onTap: () async {
-                    final state = await ref.read(updateControllerProvider).check(force: true);
+                    final state = await ref
+                        .read(updateControllerProvider)
+                        .check(force: true);
                     if (!context.mounted) return;
-                    if (state.status == UpdateStatus.updateAvailable && state.release != null) {
-                      showDialog(context: context, builder: (_) => AlertDialog(
-                        title: const Text('Pembaruan Tersedia'),
-                        content: Text('NUSARTA v${state.release!.version}\n\n${state.release!.releaseNotes}'),
-                        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Nanti')), ElevatedButton(onPressed: () { launchUrl(Uri.parse(state.release!.apkDownloadUrl), mode: LaunchMode.externalApplication); Navigator.pop(context); }, child: const Text('Update Sekarang'))],
-                      ));
+                    if (state.status == UpdateStatus.updateAvailable &&
+                        state.release != null) {
+                      showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                                title: const Text('Pembaruan Tersedia'),
+                                content: Text(
+                                    'NUSARTA v${state.release!.version}\n\n${state.release!.releaseNotes}'),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Nanti')),
+                                  ElevatedButton(
+                                      onPressed: () {
+                                        launchUrl(
+                                            Uri.parse(
+                                                state.release!.apkDownloadUrl),
+                                            mode:
+                                                LaunchMode.externalApplication);
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text('Update Sekarang'))
+                                ],
+                              ));
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.status == UpdateStatus.error ? 'Tidak dapat memeriksa pembaruan. Coba lagi.' : 'Anda menggunakan versi terbaru.')));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(state.status == UpdateStatus.error
+                              ? 'Tidak dapat memeriksa pembaruan. Coba lagi.'
+                              : 'Anda menggunakan versi terbaru.')));
                     }
                   },
                 ),

@@ -48,6 +48,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   late final TextEditingController _amount;
   final _note = TextEditingController();
   bool _saving = false;
+  String? _saveError;
 
   bool get _isEdit => widget.initial != null;
 
@@ -77,6 +78,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final amount = double.tryParse(_amount.text.replaceAll('.', '')) ?? 0;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -91,12 +93,15 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       return;
     }
 
-    setState(() => _saving = true);
-    final controller = ref.read(transactionsControllerProvider);
-    final userId = ref.read(currentUserProvider)?.id ?? '';
-    final note = _note.text.trim().isEmpty ? null : _note.text.trim();
-
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
     try {
+      final controller = ref.read(transactionsControllerProvider);
+      final userId = ref.read(currentUserProvider)?.id ?? '';
+      final note = _note.text.trim().isEmpty ? null : _note.text.trim();
+
       if (_kind == TransactionKind.transfer) {
         if (_isEdit) throw UnsupportedError('edit-transfer');
         if (_accountId == null ||
@@ -149,6 +154,11 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         ),
       );
       Navigator.pop(context);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _saveError =
+            'Transaksi belum berhasil disimpan. Periksa koneksi dan coba lagi.');
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -340,6 +350,18 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               ),
             ),
             const SizedBox(height: 20),
+            if (_saveError != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    _saveError!,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
+              ),
             FilledButton(
               onPressed: _saving ? null : _save,
               child: _saving

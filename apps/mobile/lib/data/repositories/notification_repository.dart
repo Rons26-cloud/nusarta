@@ -39,7 +39,8 @@ class NotificationRepository {
     Map<String, dynamic> data = const {},
   }) async {
     if (!type.isV1Supported) return null;
-    final rowId = await SupabaseConfig.client.rpc('create_user_notification', params: {
+    final rowId =
+        await SupabaseConfig.client.rpc('create_user_notification', params: {
       'p_type': type.dbValue,
       'p_title': title,
       'p_body': body,

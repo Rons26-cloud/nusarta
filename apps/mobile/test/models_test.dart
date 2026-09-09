@@ -159,8 +159,10 @@ void main() {
     });
 
     test('reserved types are not V1-supported and map db values', () {
-      expect(AppNotificationType.accountConnection.dbValue, 'account_connection');
-      expect(AppNotificationType.fromDb('transfer'), AppNotificationType.transfer);
+      expect(
+          AppNotificationType.accountConnection.dbValue, 'account_connection');
+      expect(
+          AppNotificationType.fromDb('transfer'), AppNotificationType.transfer);
       expect(AppNotificationType.transfer.isV1Supported, isFalse);
       expect(AppNotificationType.security.isV1Supported, isTrue);
       expect(AppNotificationType.fromDb('unknown'), AppNotificationType.system);
