@@ -26,6 +26,11 @@ describe("public deployment URLs", () => {
     expect(releaseDownloadUrl()).toBe("https://files.example.org/releases/NUSARTA.apk");
   });
 
+  it("accepts a local relative APK path", () => {
+    vi.stubEnv("NEXT_PUBLIC_DOWNLOAD_URL", "/downloads/NUSARTA.apk");
+    expect(releaseDownloadUrl()).toBe("/downloads/NUSARTA.apk");
+  });
+
   it.each(["javascript:alert(1)", "http://localhost:3000", "https://localhost", "https://user:password@example.org", "invalid"])("rejects an unsafe public URL", (value) => {
     vi.stubEnv("NEXT_PUBLIC_DOWNLOAD_URL", value);
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", value);

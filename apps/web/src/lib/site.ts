@@ -5,8 +5,12 @@ const productionOrigin = "https://nusarta.nusarta-official.workers.dev";
 
 function publicHttpsUrl(value: string | undefined): string | null {
   if (!value?.trim()) return null;
+  const trimmed = value.trim();
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) {
+    return trimmed;
+  }
   try {
-    const url = new URL(value.trim());
+    const url = new URL(trimmed);
     if (url.protocol !== "https:" || url.username || url.password ||
         /^(localhost|127\.|\[::1\])/.test(url.hostname)) return null;
     return url.href;
