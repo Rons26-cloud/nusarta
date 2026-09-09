@@ -17,6 +17,7 @@ import { CTASection } from "@/components/CTASection";
 import { releaseChannels } from "@/lib/data";
 
 import { playStoreUrl, releaseDownloadUrl } from "@/lib/site";
+import { getLatestGithubRelease } from "@/lib/github-releases";
 
 export const metadata: Metadata = {
   title: "Download",
@@ -25,10 +26,12 @@ export const metadata: Metadata = {
   alternates: canonicalMetadata("/download"),
 };
 
-export default function DownloadPage() {
-  const downloadUrl = releaseDownloadUrl();
+export default async function DownloadPage() {
+  const latestRelease = await getLatestGithubRelease();
+  const downloadUrl = latestRelease?.apkUrl ?? releaseDownloadUrl();
   const playsstore = playStoreUrl();
-  const downloadAvailable = Boolean(downloadUrl && currentRelease.checksumSha256);
+  const downloadAvailable = Boolean(downloadUrl);
+  const displayedVersion = latestRelease ? `Versi ${latestRelease.version}` : `Versi ${currentRelease.version}`;
 
   return (
     <>
@@ -62,7 +65,7 @@ export default function DownloadPage() {
                       NUSARTA for Android
                     </p>
                     <p className="font-display text-2xl sm:text-3xl font-bold text-foreground">
-                      Versi {currentRelease.version}
+                      {displayedVersion}
                       {currentRelease.buildNumber !== "1" &&
                         `+${currentRelease.buildNumber}`}
                     </p>
@@ -150,6 +153,9 @@ export default function DownloadPage() {
                     </a>
                   )}
                 </div>
+                <Link href="/releases" className="mt-4 inline-flex text-sm font-semibold text-brand hover:underline">
+                  Lihat riwayat versi
+                </Link>
 
                 {currentRelease.checksumSha256 && (
                   <div className="mt-8 rounded-xl border border-border bg-muted p-4">
