@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { render, screen, within, cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getGithubReleaseCatalog, normalizeReleases } from "../github-releases";
+import { getGithubReleaseCatalog, getGithubTestRelease, normalizeReleases, TEST_RELEASE_APK_URL } from "../github-releases";
 import { releaseFixture } from "./release-fixtures";
 import DownloadPage from "@/app/download/page";
 import ReleasesPage from "@/app/releases/page";
@@ -35,12 +35,25 @@ describe("release pages", () => {
     expect(screen.getAllByText("a".repeat(64))).toHaveLength(2);
     expect(screen.getByRole("link", {name: "Download APK v1.0.2"})).toHaveAttribute("href", releases[1].apkUrl);
   });
+  it("uses the exact external device-test APK URL", async () => {
+    vi.mocked(getGithubReleaseCatalog).mockResolvedValue({status: "ready", releases: []});
+    vi.mocked(getGithubTestRelease).mockResolvedValue({
+      tag: "test-v1.0.1-build2", version: "1.0.1", build: "2",
+      title: "NUSARTA v1.0.1 Build 2 — Device Test", publishedAt: "2026-09-10T00:00:00Z",
+      apkUrl: TEST_RELEASE_APK_URL, apkSize: 168525347,
+    });
+    render(await DownloadPage());
+    const button = screen.getByRole("link", {name: "Download APK Test"});
+    expect(button).toHaveAttribute("href", TEST_RELEASE_APK_URL);
+    expect(button).not.toHaveAttribute("href", "/");
+    expect(button).toHaveAttribute("rel", "noopener noreferrer");
+  });
   it.each(["ready", "unavailable"] as const)("has safe %s state with no invented APK links", async (status) => {
     vi.stubEnv("NEXT_PUBLIC_DOWNLOAD_URL", "/downloads/NUSARTA.apk");
     vi.mocked(getGithubReleaseCatalog).mockResolvedValue({status, releases: []});
     const {container} = render(await DownloadPage());
     expect(screen.getByRole("status")).toHaveTextContent(status === "unavailable" ? "belum dapat diperbarui" : "Belum ada rilis stabil");
-    expect(container.querySelector('a[href$=".apk"]')).toBeNull();
+    expect(container.querySelector('a[href$="/NUSARTA.apk"]')).toBeNull();
     expect(screen.queryByText("Versi 1.0.0")).not.toBeInTheDocument();
     vi.unstubAllEnvs();
   });

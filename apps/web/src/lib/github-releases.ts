@@ -163,7 +163,7 @@ export async function getLatestGithubRelease(): Promise<GithubRelease | null> {
 const TEST_RELEASE_TAG = "test-v1.0.1-build2";
 const testEndpoint = `${endpoint}/tags/${TEST_RELEASE_TAG}`;
 const TEST_RELEASE_APK = "NUSARTA-TEST-v1.0.1-build2.apk";
-const TEST_RELEASE_APK_URL = `https://github.com/Rons26-cloud/nusarta/releases/download/${TEST_RELEASE_TAG}/${TEST_RELEASE_APK}`;
+export const TEST_RELEASE_APK_URL = `https://github.com/Rons26-cloud/nusarta/releases/download/${TEST_RELEASE_TAG}/${TEST_RELEASE_APK}`;
 const testReleaseFallback: GithubTestRelease = {
   tag: TEST_RELEASE_TAG,
   version: "1.0.1",
