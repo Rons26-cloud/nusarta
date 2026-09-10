@@ -162,6 +162,17 @@ export async function getLatestGithubRelease(): Promise<GithubRelease | null> {
 
 const TEST_RELEASE_TAG = "test-v1.0.1-build2";
 const testEndpoint = `${endpoint}/tags/${TEST_RELEASE_TAG}`;
+const TEST_RELEASE_APK = "NUSARTA-TEST-v1.0.1-build2.apk";
+const TEST_RELEASE_APK_URL = `https://github.com/Rons26-cloud/nusarta/releases/download/${TEST_RELEASE_TAG}/${TEST_RELEASE_APK}`;
+const testReleaseFallback: GithubTestRelease = {
+  tag: TEST_RELEASE_TAG,
+  version: "1.0.1",
+  build: "2",
+  title: "NUSARTA v1.0.1 Build 2 — Device Test",
+  publishedAt: "2026-09-10T00:00:00Z",
+  apkUrl: TEST_RELEASE_APK_URL,
+  apkSize: 168525347,
+};
 
 export async function getGithubTestRelease(): Promise<GithubTestRelease | null> {
   try {
@@ -170,24 +181,24 @@ export async function getGithubTestRelease(): Promise<GithubTestRelease | null> 
       signal: AbortSignal.timeout(10000),
       headers: { Accept: "application/vnd.github+json", "User-Agent": "NUSARTA-Release-Website", "X-GitHub-Api-Version": "2022-11-28" },
     });
-    if (!response.ok) return null;
+    if (!response.ok) return testReleaseFallback;
     const item: unknown = await response.json();
     if (!record(item) || item.draft !== false || item.prerelease !== true ||
         item.tag_name !== TEST_RELEASE_TAG || typeof item.published_at !== "string" ||
-        !Array.isArray(item.assets)) return null;
-    const apk = item.assets.find((asset) => record(asset) && assetUrl(asset, TEST_RELEASE_TAG, "NUSARTA-TEST-v1.0.1-build2.apk"));
-    if (!record(apk)) return null;
+        !Array.isArray(item.assets)) return testReleaseFallback;
+    const apk = item.assets.find((asset) => record(asset) && assetUrl(asset, TEST_RELEASE_TAG, TEST_RELEASE_APK));
+    if (!record(apk)) return testReleaseFallback;
     return {
       tag: TEST_RELEASE_TAG,
       version: "1.0.1",
       build: "2",
       title: typeof item.name === "string" ? item.name : "NUSARTA v1.0.1 Build 2 — Device Test",
       publishedAt: item.published_at,
-      apkUrl: assetUrl(apk, TEST_RELEASE_TAG, "NUSARTA-TEST-v1.0.1-build2.apk")!,
+      apkUrl: assetUrl(apk, TEST_RELEASE_TAG, TEST_RELEASE_APK)!,
       apkSize: apk.size as number,
     };
   } catch {
-    return null;
+    return testReleaseFallback;
   }
 }
 
