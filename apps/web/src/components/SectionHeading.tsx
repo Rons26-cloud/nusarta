@@ -7,6 +7,7 @@ interface SectionHeadingProps {
   description?: string;
   className?: string;
   align?: "center" | "left";
+  light?: boolean;
 }
 
 export function SectionHeading({
@@ -15,6 +16,7 @@ export function SectionHeading({
   description,
   className,
   align = "center",
+  light = false,
 }: SectionHeadingProps) {
   return (
     <div
@@ -25,15 +27,15 @@ export function SectionHeading({
       )}
     >
       {eyebrow && (
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
+        <p className={cn("text-xs font-semibold uppercase tracking-[0.2em]", light ? "text-nusa-gold" : "text-brand")}>
           {eyebrow}
         </p>
       )}
-      <h2 className="mt-3 font-display text-2xl font-semibold leading-tight tracking-tight text-balance text-foreground sm:text-3xl lg:text-4xl">
+      <h2 className={cn("mt-3 font-display text-2xl font-semibold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl", light ? "text-nusa-offwhite" : "text-foreground")}>
         {title}
       </h2>
       {description && (
-        <p className="mt-4 text-sm leading-7 sm:text-base text-muted-foreground">
+        <p className={cn("mt-4 text-sm leading-7 sm:text-base", light ? "text-nusa-offwhite/70" : "text-muted-foreground")}>
           {description}
         </p>
       )}
