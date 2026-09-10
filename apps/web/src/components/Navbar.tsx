@@ -49,10 +49,11 @@ export function Navbar() {
         <Link href="/" aria-label="NUSARTA beranda" className="group flex shrink-0 items-center gap-2 sm:gap-3">
           <div className="relative h-10 w-10 shrink-0 sm:h-12 sm:w-12">
             <Image
-              src="/nusarta02.png"
+              src="/nusarta02.webp"
               alt=""
               fill
-              className="object-contain" sizes="(min-width: 640px) 48px, 40px"
+              className="object-contain"
+              sizes="(min-width: 640px) 48px, 40px"
             />
           </div>
           <span aria-hidden="true" className="whitespace-nowrap text-xl font-black tracking-tighter text-foreground sm:text-2xl">NUS<span className="text-accent-foreground">A</span>RT<span className="text-accent-foreground">A</span></span>

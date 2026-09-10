@@ -1,2 +1,8 @@
 /_next/static/*
   Cache-Control: public,max-age=31536000,immutable
+
+/hero-*.webp
+  Cache-Control: public,max-age=86400,stale-while-revalidate=604800
+
+/nusarta02.webp
+  Cache-Control: public,max-age=86400,stale-while-revalidate=604800

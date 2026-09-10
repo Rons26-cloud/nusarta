@@ -7,15 +7,22 @@ export function Hero() {
   return (
     <section aria-label="NUSARTA" className={styles.hero + " bg-background"}>
       <h1 className="sr-only">Keuanganmu, Dalam Kendalimu.</h1>
+      <link rel="preload" as="image" href="/hero-480.webp" imageSrcSet="/hero-480.webp 480w, /hero-768.webp 768w, /hero-1200.webp 1200w, /hero-1536.webp 1536w" imageSizes="100vw" fetchPriority="high" />
+      <picture>
+        <source media="(max-width: 600px)" srcSet="/hero-480.webp" />
+        <source media="(max-width: 1024px)" srcSet="/hero-768.webp" />
+        <source media="(max-width: 1400px)" srcSet="/hero-1200.webp" />
       <Image
-        src="/hero.png"
+        src="/hero-1536.webp"
         alt="NUSARTA. Keuanganmu, Dalam Kendalimu. NUSARTA membantu kamu mencatat, memahami, dan mengelola keuangan pribadi dengan mudah, aman, dan modern."
         width={1536}
         height={1024}
-        priority
-        className="block h-auto w-full object-contain"
+        fetchPriority="high"
+className="block h-auto w-full object-contain"
         sizes="100vw"
+        unoptimized
       />
+      </picture>
 
       <div className={styles.cta}>
         <Link
