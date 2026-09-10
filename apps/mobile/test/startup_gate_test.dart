@@ -45,13 +45,13 @@ void main() {
             shouldLock: Future.value(false)),
         StartupDestination.home);
   });
-  test('missing config fails clearly', () async {
+  test('missing config still allows clean signed-out onboarding', () async {
     expect(
         await resolveStartup(
             configured: false,
             loggedIn: false,
             hasPin: Future.value(false),
             shouldLock: Future.value(false)),
-        StartupDestination.error);
+        StartupDestination.welcome);
   });
 }

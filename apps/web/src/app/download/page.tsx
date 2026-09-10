@@ -17,7 +17,7 @@ import { CTASection } from "@/components/CTASection";
 import { releaseChannels } from "@/lib/data";
 
 import { playStoreUrl } from "@/lib/site";
-import { getGithubReleaseCatalog, apkSize, releaseDate, RELEASES_URL } from "@/lib/github-releases";
+import { getGithubReleaseCatalog, getGithubTestRelease, apkSize, releaseDate, RELEASES_URL } from "@/lib/github-releases";
 import { ReleaseCard, ReleaseChecksum, ReleaseNotes } from "@/components/ReleaseCard";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +30,10 @@ export const metadata: Metadata = {
 };
 
 export default async function DownloadPage() {
-  const { releases, status } = await getGithubReleaseCatalog();
+  const [{ releases, status }, testRelease] = await Promise.all([
+    getGithubReleaseCatalog(),
+    getGithubTestRelease(),
+  ]);
   const [latestRelease, ...previousReleases] = releases;
   const downloadUrl = latestRelease?.apkUrl;
   const playsstore = playStoreUrl();
@@ -169,6 +172,19 @@ export default async function DownloadPage() {
                 </p>
               </section>
             </Reveal>
+
+            {testRelease && (
+              <section aria-labelledby="android-test-heading" className="mt-6 rounded-2xl border border-amber-300/60 bg-amber-50/60 p-5 shadow-sm dark:bg-amber-950/20 sm:p-8">
+                <p className="text-xs font-semibold uppercase tracking-widest text-amber-800 dark:text-amber-300">Versi Pengujian Android</p>
+                <h2 id="android-test-heading" className="mt-2 font-display text-2xl font-bold text-foreground">NUSARTA v1.0.1 Build 2</h2>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">Versi ini digunakan untuk pengujian perangkat sebelum rilis resmi.</p>
+                <p className="mt-2 text-xs text-muted-foreground">Belum merupakan rilis produksi atau versi stabil.</p>
+                <a href={testRelease.apkUrl} download="NUSARTA-TEST-v1.0.1-build2.apk" className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-700/30 bg-amber-100 px-5 py-3 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60">
+                  <Download aria-hidden="true" className="h-5 w-5" />
+                  Download APK Test
+                </a>
+              </section>
+            )}
 
             <div className="min-w-0 space-y-6">
               <section className="rounded-2xl border border-border bg-card p-6">

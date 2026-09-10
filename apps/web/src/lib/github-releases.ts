@@ -15,6 +15,16 @@ export type ReleaseCatalog = {
   releases: GithubRelease[];
 };
 
+export type GithubTestRelease = {
+  tag: string;
+  version: string;
+  build: string;
+  title: string;
+  publishedAt: string;
+  apkUrl: string;
+  apkSize: number;
+};
+
 export const RELEASES_URL = "https://github.com/Rons26-cloud/nusarta/releases";
 export const RELEASE_CACHE_SECONDS = 300;
 // v1.0.0 is excluded after the validated device startup failure.
@@ -148,6 +158,37 @@ export async function getGithubReleases(): Promise<GithubRelease[]> {
 
 export async function getLatestGithubRelease(): Promise<GithubRelease | null> {
   return (await getGithubReleases())[0] ?? null;
+}
+
+const TEST_RELEASE_TAG = "test-v1.0.1-build2";
+const testEndpoint = `${endpoint}/tags/${TEST_RELEASE_TAG}`;
+
+export async function getGithubTestRelease(): Promise<GithubTestRelease | null> {
+  try {
+    const response = await fetch(testEndpoint, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+      headers: { Accept: "application/vnd.github+json", "User-Agent": "NUSARTA-Release-Website", "X-GitHub-Api-Version": "2022-11-28" },
+    });
+    if (!response.ok) return null;
+    const item: unknown = await response.json();
+    if (!record(item) || item.draft !== false || item.prerelease !== true ||
+        item.tag_name !== TEST_RELEASE_TAG || typeof item.published_at !== "string" ||
+        !Array.isArray(item.assets)) return null;
+    const apk = item.assets.find((asset) => record(asset) && assetUrl(asset, TEST_RELEASE_TAG, "NUSARTA-TEST-v1.0.1-build2.apk"));
+    if (!record(apk)) return null;
+    return {
+      tag: TEST_RELEASE_TAG,
+      version: "1.0.1",
+      build: "2",
+      title: typeof item.name === "string" ? item.name : "NUSARTA v1.0.1 Build 2 — Device Test",
+      publishedAt: item.published_at,
+      apkUrl: assetUrl(apk, TEST_RELEASE_TAG, "NUSARTA-TEST-v1.0.1-build2.apk")!,
+      apkSize: apk.size as number,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function releaseDate(value: string): string {

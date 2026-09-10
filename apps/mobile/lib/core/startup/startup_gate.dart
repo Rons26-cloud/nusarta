@@ -17,8 +17,8 @@ Future<StartupDestination> resolveStartup(
     required bool loggedIn,
     required Future<bool> hasPin,
     required Future<bool> shouldLock}) async {
-  if (!configured) return StartupDestination.error;
   if (!loggedIn) return StartupDestination.welcome;
+  if (!configured) return StartupDestination.error;
   final pin = await startupBool(hasPin);
   if (pin == null) return StartupDestination.error;
   if (!pin) return StartupDestination.pinSetup;

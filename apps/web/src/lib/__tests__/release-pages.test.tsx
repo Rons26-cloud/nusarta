@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import { render, screen, within, cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getGithubReleaseCatalog, normalizeReleases } from "../github-releases";
+import { getGithubReleaseCatalog, getGithubTestRelease, normalizeReleases } from "../github-releases";
 import { releaseFixture } from "./release-fixtures";
 import DownloadPage from "@/app/download/page";
 import ReleasesPage from "@/app/releases/page";
 
-vi.mock("@/lib/github-releases", async (original) => ({...await original<typeof import("../github-releases")>(), getGithubReleaseCatalog: vi.fn()}));
+vi.mock("@/lib/github-releases", async (original) => ({...await original<typeof import("../github-releases")>(), getGithubReleaseCatalog: vi.fn(), getGithubTestRelease: vi.fn().mockResolvedValue(null)}));
 vi.mock("@/components/Reveal", () => ({Reveal: ({children}: {children: ReactNode}) => <div>{children}</div>}));
 vi.mock("@/components/PhoneMockup", () => ({PhoneMockup: () => <div />}));
 afterEach(cleanup);

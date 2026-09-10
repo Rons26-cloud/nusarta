@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/data/supabase_client.dart';
+
 class StartupErrorPage extends StatelessWidget {
   const StartupErrorPage({super.key});
 
@@ -19,7 +21,15 @@ class StartupErrorPage extends StatelessWidget {
                 const Text('Periksa konfigurasi atau coba lagi.'),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: () => context.go('/splash'),
+                  onPressed: () async {
+                    try {
+                      await SupabaseConfig.initialize();
+                    } catch (_) {
+                      // Keep the page recoverable; the next retry starts from
+                      // the same clean state without exposing credentials.
+                    }
+                    if (context.mounted) context.go('/');
+                  },
                   child: const Text('Coba lagi'),
                 ),
               ],

@@ -33,14 +33,23 @@ final router = GoRouter(
     // Branding only; the next route still passes every security gate below.
     if (state.matchedLocation == '/splash' ||
         state.matchedLocation == '/startup-error') return null;
+    final loggedIn = SupabaseConfig.isInitialized &&
+        SupabaseConfig.client.auth.currentUser != null;
     if (!AppConfig.isConfigured || !SupabaseConfig.isInitialized) {
-      return '/startup-error';
+      // A clean install is allowed to reach onboarding even when the optional
+      // backend configuration is absent. Login and sync surface their own
+      // actionable errors when the public client is unavailable.
+      if (!loggedIn &&
+          (state.matchedLocation == '/welcome' ||
+              state.matchedLocation == '/login' ||
+              state.matchedLocation == '/register')) return null;
+      return '/welcome';
     }
-    final loggedIn = SupabaseConfig.client.auth.currentUser != null;
     final location = state.matchedLocation;
 
     final hasPin = await startupBool(PinService.isSet);
     if (hasPin == null) return '/startup-error';
+    SupabaseConfig.log('PIN state complete');
 
     // Signed out.
     if (!loggedIn) {
@@ -65,6 +74,7 @@ final router = GoRouter(
     if (location != '/lock') {
       final shouldLock = await startupBool(AutoLockService.shouldLock());
       if (shouldLock == null) return '/startup-error';
+      SupabaseConfig.log('lock state complete');
       if (shouldLock) return '/lock';
     }
 

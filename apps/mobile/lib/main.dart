@@ -9,7 +9,8 @@ Future<void> main() async {
   try {
     await SupabaseConfig.initialize().timeout(const Duration(seconds: 10));
   } catch (_) {
-    debugPrint('Supabase initialization failed');
+    SupabaseConfig.log('initialization failed; continuing to recoverable route');
   }
+  SupabaseConfig.log('session restore complete');
   runApp(const ProviderScope(child: NusartaApp()));
 }
