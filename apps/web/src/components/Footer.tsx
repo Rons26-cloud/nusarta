@@ -9,7 +9,9 @@ function FooterColumn({ title, links }: { title: string; links: { label: string;
       <ul className="mt-3">
         {links.map((link) => (
           <li key={link.href}>
-            {link.href.startsWith("https://") ? <a href={link.href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-sm text-muted-foreground transition-colors hover:text-brand">{link.label}</a> : <Link href={link.href} className="inline-flex min-h-11 items-center text-sm text-muted-foreground transition-colors hover:text-brand">{link.label}</Link>}
+            <Link href={link.href} className="inline-flex min-h-11 items-center text-sm text-muted-foreground transition-colors hover:text-brand">
+              {link.label}
+            </Link>
           </li>
         ))}
       </ul>
@@ -21,7 +23,7 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-muted">
       <div className="mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-3 xl:grid-cols-[1.5fr_repeat(5,minmax(0,1fr))] lg:gap-8">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-[1.5fr_repeat(4,minmax(0,1fr))] lg:gap-8">
           <div className="col-span-2 min-w-0 lg:col-span-1">
             <Link href="/" aria-label="NUSARTA beranda" className="inline-flex min-h-11 items-center gap-2">
               <Image src="/nusarta02.png" width={40} height={40} alt="" />
@@ -40,7 +42,6 @@ export function Footer() {
           <FooterColumn title="Perusahaan" links={footerNav.company} />
           <FooterColumn title="Bantuan" links={footerNav.support} />
           <FooterColumn title="Legal" links={footerNav.legal} />
-          <FooterColumn title="Developer" links={[{ label: "NIAGANTARA", href: "https://niagantara-web.pages.dev/" }, { label: "Xyrons Portfolio", href: "https://my-portfolioo.pages.dev/" }, { label: "Xyrons Hub", href: "https://www.xyronhub.xyz/" }]} />
         </div>
         <div className="mt-10 grid gap-3 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground lg:grid-cols-2">
           <p>© {new Date().getFullYear()} NUSARTA. Dari Nusantara, Untuk Masa Depan yang Lebih Baik.</p>

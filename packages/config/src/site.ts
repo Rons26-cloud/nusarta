@@ -21,9 +21,9 @@ export const navItems: NavItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Fitur", href: "/features" },
   { label: "Keamanan", href: "/security" },
-  { label: "Community", href: "/community" },
-  { label: "Download", href: "/download" },
-  { label: "Tentang", href: "/about" },
+  { label: "Cara Kerja", href: "/how-it-works" },
+  { label: "Roadmap", href: "/roadmap" },
+  { label: "FAQ", href: "/faq" },
 ];
 
 export const footerNav = {
@@ -31,17 +31,16 @@ export const footerNav = {
     { label: "Fitur", href: "/features" },
     { label: "Keamanan", href: "/security" },
     { label: "Download", href: "/download" },
-    { label: "Community", href: "/community" },
     { label: "Roadmap", href: "/roadmap" },
   ],
   company: [
     { label: "Tentang", href: "/about" },
     { label: "Changelog", href: "/changelog" },
-    { label: "Releases", href: "/releases" },
   ],
   support: [
     { label: "FAQ", href: "/faq" },
     { label: "Cara Kerja", href: "/how-it-works" },
+    { label: "Komunitas", href: "/community" },
     { label: "Kontak", href: "/contact" },
   ],
   legal: [

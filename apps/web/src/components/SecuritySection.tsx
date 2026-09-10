@@ -7,12 +7,12 @@ const securityFeatures = [
   {
     icon: Fingerprint,
     title: "Autentikasi Biometrik & PIN",
-    description: "PIN 6 digit dan biometrik pada perangkat yang mendukungnya",
+    description: "PIN 6 digit dengan dukungan fingerprint/wajah untuk akses cepat dan aman",
   },
   {
     icon: Lock,
-    title: "Perlindungan saat sinkronisasi",
-    description: "Koneksi terenkripsi melindungi data saat dikirim untuk sinkronisasi",
+    title: "Data Terenkripsi",
+    description: "Data dienkripsi dalam transit dan disimpan dengan aman di server",
   },
   {
     icon: Database,
@@ -27,7 +27,7 @@ const securityFeatures = [
   {
     icon: Key,
     title: "Data Hanya Milik Pengguna",
-    description: "Kelola catatan melalui akun pribadimu dan pelajari kebijakan privasi kami",
+    description: "Kamu memiliki kontrol penuh atas data keuangan pribadimu",
   },
 ];
 

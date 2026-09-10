@@ -6,9 +6,6 @@ import { FeatureGrid } from "@/components/FeatureGrid";
 import { HowItWorksTeaser } from "@/components/HowItWorksTeaser";
 import { SecuritySection } from "@/components/SecuritySection";
 import { CTASection } from "@/components/CTASection";
-import { CommunityPreview } from "@/components/CommunityPreview";
-import { RoadmapPreview } from "@/components/RoadmapPreview";
-import { TrustStrip } from "@/components/TrustStrip";
 
 export const metadata: Metadata = {
   title: "NUSARTA — Keuanganmu, Dalam Kendalimu",
@@ -21,12 +18,9 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <TrustStrip />
       <FeatureGrid />
       <HowItWorksTeaser />
       <SecuritySection />
-      <RoadmapPreview />
-      <CommunityPreview />
       <CTASection />
     </>
   );

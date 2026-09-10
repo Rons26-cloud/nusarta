@@ -14,13 +14,12 @@ export function FeatureGrid() {
           title="Keuangan sehari-hari, lebih teratur."
           description="Dari mencatat transaksi hingga memantau tujuan keuangan — NUSARTA merapikan seluruhnya."
         />
-        <p className="mt-5 max-w-2xl text-sm leading-6 text-muted-foreground">Akun bank dan e-wallet digunakan sebagai catatan manual. NUSARTA tidak mengakses rekening atau memindahkan uangmu.</p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature, i) => {
             const Icon = feature.icon;
             return (
               <Reveal key={feature.title} delay={(i % 4) * 0.06}>
-                <div className="h-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="h-full rounded-xl border border-border bg-card p-5">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-brand">
                     <Icon aria-hidden="true" className="h-5 w-5" />
                   </div>
@@ -38,7 +37,7 @@ export function FeatureGrid() {
         <Reveal className="mt-10 lg:mt-14 text-center">
           <Link
             href="/features"
-            className="inline-flex min-h-11 items-center gap-2 text-base font-semibold text-brand transition-colors hover:text-brand"
+            className="inline-flex items-center gap-2 text-base font-semibold text-brand transition-colors hover:text-brand"
           >
             Jelajahi semua fitur
             <ArrowUpRight aria-hidden="true" className="h-5 w-5" />
