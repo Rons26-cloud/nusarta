@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { render, screen, within, cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getGithubReleaseCatalog, getGithubTestRelease, normalizeReleases } from "../github-releases";
+import { getGithubReleaseCatalog, normalizeReleases } from "../github-releases";
 import { releaseFixture } from "./release-fixtures";
 import DownloadPage from "@/app/download/page";
 import ReleasesPage from "@/app/releases/page";
