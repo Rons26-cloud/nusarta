@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../data/models/transaction.dart';
 import '../../providers/finance_providers.dart';
 import '../../widgets/cash_flow_chart.dart';
+import '../../widgets/finance_load_state.dart';
 import '../../widgets/finance_summary.dart';
 
 enum ReportRange { daily, weekly, monthly, yearly }
@@ -41,8 +42,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       appBar: AppBar(title: const Text('Laporan')),
       body: state.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) =>
-            const Center(child: Text('Gagal memuat laporan. Coba lagi nanti.')),
+        error: (error, _) => FinanceLoadError(
+            error: error, onRetry: () => ref.invalidate(transactionsProvider)),
         data: (transactions) {
           final filtered = transactions
               .where((t) =>

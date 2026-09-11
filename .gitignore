@@ -35,6 +35,7 @@ apps/mobile/*.iml
 apps/mobile/local.properties
 apps/mobile/android/local.properties
 apps/mobile/lib/core/config/app_config.dart
+apps/mobile/run_local.ps1
 
 # Environment
 .env

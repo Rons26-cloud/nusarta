@@ -55,7 +55,7 @@ class _ComingSoon extends StatelessWidget {
                     color: AppColors.goldLight, fontWeight: FontWeight.w700)),
             const SizedBox(height: 24),
             const Text(
-                'Transfer melalui provider resmi akan tersedia di versi mendatang, setelah integrasi dan persetujuan pengguna siap.',
+                'Fitur ini sedang disiapkan.\nNUSARTA akan mendukung transfer melalui provider resmi\npada versi mendatang.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.cream, height: 1.6)),
           ]),

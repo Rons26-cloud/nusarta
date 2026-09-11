@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/feature_flags.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/auth_error.dart';
 import '../../core/utils/email_validation.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/nusarta_brand.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
-
   @override
   ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
@@ -42,133 +43,151 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       _error = null;
     });
     try {
-      final controller = ref.read(authControllerProvider);
-      final result = await controller.signUp(
-        _email.text.trim(),
-        _password.text,
-        name: _name.text.trim(),
+      final result = await ref
+          .read(authControllerProvider)
+          .signUp(_email.text.trim(), _password.text, name: _name.text.trim());
+      if (!mounted) return;
+      if (result == RegistrationResult.authenticated) {
+        context.go('/');
+        return;
+      }
+      if (FeatureFlags.isEnabled(FeatureFlag.emailOtpVerification)) {
+        context.go('/otp', extra: _email.text.trim());
+        return;
+      }
+      setState(
+        () => _message =
+            'Akun berhasil dibuat. Periksa email Anda dan buka tautan verifikasi.',
       );
-      if (mounted) {
-        if (result == RegistrationResult.authenticated) {
-          context.go('/');
-          return;
-        }
-        setState(() {
-          _message =
-              'Akun berhasil dibuat. Periksa email Anda untuk melakukan verifikasi.';
-        });
-      }
     } catch (e) {
-      if (mounted) {
-        setState(() => _error = authErrorMessage(e,
-            fallback: 'Pendaftaran belum berhasil. Silakan coba lagi.'));
-      }
+      if (mounted)
+        setState(
+          () => _error = authErrorMessage(
+            e,
+            fallback: 'Pendaftaran belum berhasil. Silakan coba lagi.',
+          ),
+        );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Akun')),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                      controller: _name,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Nama',
-                        prefixIcon: Icon(Icons.person_outline),
+  Widget build(BuildContext context) => NusartaAuthScaffold(
+        artworkAsset: 'assets/brand/rigister.png',
+        onBack: () => context.go('/welcome'),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              NusartaTextField(
+                controller: _name,
+                label: 'Nama Lengkap',
+                icon: Icons.person_outline,
+                textInputAction: TextInputAction.next,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Masukkan nama kamu'
+                    : null,
+              ),
+              const SizedBox(height: 14),
+              NusartaTextField(
+                controller: _email,
+                label: 'Email',
+                icon: Icons.mail_outline,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                validator: (v) => v != null && isValidEmail(v)
+                    ? null
+                    : 'Masukkan email valid',
+              ),
+              const SizedBox(height: 14),
+              NusartaTextField(
+                controller: _password,
+                label: 'Kata Sandi (min. 6 karakter)',
+                icon: Icons.lock_outline,
+                obscureText: _obscure,
+                textInputAction: TextInputAction.next,
+                suffixIcon: IconButton(
+                  icon:
+                      Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+                validator: (v) =>
+                    v != null && v.length >= 6 ? null : 'Minimal 6 karakter',
+              ),
+              const SizedBox(height: 14),
+              NusartaTextField(
+                controller: _confirm,
+                label: 'Konfirmasi Kata Sandi',
+                icon: Icons.lock_outline,
+                obscureText: _obscure,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submit(),
+                validator: (v) =>
+                    v == _password.text ? null : 'Kata sandi tidak sama',
+              ),
+              if (_message != null)
+                Container(
+                  margin: const EdgeInsets.only(top: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    _message!,
+                    style: const TextStyle(color: AppColors.primary),
+                  ),
+                ),
+              if (_error != null)
+                Container(
+                  margin: const EdgeInsets.only(top: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.expense.withOpacity(.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border:
+                        Border.all(color: AppColors.expense.withOpacity(.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.expense,
+                        size: 20,
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Masukkan nama kamu'
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.mail_outline),
-                      ),
-                      validator: (v) => v != null && isValidEmail(v)
-                          ? null
-                          : 'Masukkan email valid',
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _password,
-                      obscureText: _obscure,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: 'Kata Sandi (min. 6 karakter)',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscure
-                              ? Icons.visibility_off
-                              : Icons.visibility),
-                          onPressed: () => setState(() => _obscure = !_obscure),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(color: AppColors.expense),
                         ),
                       ),
-                      validator: (v) => v != null && v.length >= 6
-                          ? null
-                          : 'Minimal 6 karakter',
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _confirm,
-                      obscureText: _obscure,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _submit(),
-                      decoration: const InputDecoration(
-                        labelText: 'Konfirmasi Kata Sandi',
-                        prefixIcon: Icon(Icons.lock_outline),
-                      ),
-                      validator: (v) =>
-                          v == _password.text ? null : 'Kata sandi tidak sama',
-                    ),
-                    if (_message != null) ...[
-                      const SizedBox(height: 14),
-                      Text(_message!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppColors.primary)),
                     ],
-                    if (_error != null) ...[
-                      const SizedBox(height: 14),
-                      Text(_error!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppColors.expense)),
-                    ],
-                    const SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: _loading ? null : _submit,
-                      child: _loading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Daftar'),
+                  ),
+                ),
+              const SizedBox(height: 22),
+              NusartaPrimaryButton(
+                label: 'Daftar',
+                onPressed: _loading ? null : _submit,
+                loading: _loading,
+              ),
+              const SizedBox(height: 14),
+              Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  children: [
+                    const Text('Sudah punya akun? '),
+                    TextButton(
+                      onPressed: _loading ? null : () => context.go('/login'),
+                      child: const Text('Masuk Sekarang'),
                     ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
         ),
-      ),
-    );
-  }
+      );
 }

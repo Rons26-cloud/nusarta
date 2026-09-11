@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../widgets/nusarta_brand.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
@@ -9,7 +10,7 @@ class WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.deepEmerald,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -19,62 +20,30 @@ class WelcomePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Image.asset(
-                    'assets/brand/logo.png',
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.contain,
-                  ),
+                  const NusartaBrandHeader(dark: true),
                   const SizedBox(height: 20),
-                  Text(
-                    'NUSARTA',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 4,
-                          color: const Color(0xFF10231D),
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Keuanganmu, Dalam Kendalimu.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Catat pemasukan, pengeluaran, dan transfer antar akun '
                     'dalam satu aplikasi yang sederhana dan aman.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.neutral,
+                          color: Colors.white70,
                         ),
                   ),
                   const SizedBox(height: 32),
-                  FilledButton(
-                    onPressed: () => context.push('/register'),
-                    child: const Text('Mulai'),
-                  ),
+                  NusartaPrimaryButton(
+                      label: 'Mulai',
+                      onPressed: () => context.push('/register')),
                   const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: () => context.push('/login'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text('Masuk'),
-                  ),
+                  NusartaSecondaryButton(
+                      label: 'Masuk', onPressed: () => context.push('/login')),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.shield_outlined,
-                          size: 14, color: AppColors.neutral),
+                          size: 14, color: AppColors.accentLight),
                       const SizedBox(width: 6),
                       Text(
                         'PIN 6 digit & biometrik untuk melindungi datamu.',

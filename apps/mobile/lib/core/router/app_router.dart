@@ -8,6 +8,8 @@ import '../../core/startup/startup_gate.dart';
 import '../../features/accounts/accounts_page.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/auth/register_page.dart';
+import '../../features/auth/otp_verification_page.dart';
+import '../../features/auth/email_verification_success_page.dart';
 import '../../features/budgets/budgets_page.dart';
 import '../../features/dashboard/app_shell.dart';
 import '../../features/goals/goals_page.dart';
@@ -44,17 +46,25 @@ final router = GoRouter(
       if (!loggedIn &&
           (state.matchedLocation == '/welcome' ||
               state.matchedLocation == '/login' ||
-              state.matchedLocation == '/register')) {
+              state.matchedLocation == '/register' ||
+              state.matchedLocation == '/otp' ||
+              state.matchedLocation == '/email-verification-success')) {
         return null;
       }
-      return '/welcome';
+      return '/login';
     }
     final location = state.matchedLocation;
 
+    // Verification success is an intermediate screen before the existing PIN gate.
+    if (location == '/email-verification-success') return null;
+
     // Signed out.
     if (!loggedIn) {
-      if (location == '/login' || location == '/register') return null;
-      return '/welcome';
+      if (location == '/login' ||
+          location == '/register' ||
+          location == '/otp' ||
+          location == '/email-verification-success') return null;
+      return '/login';
     }
 
     final hasPin = await startupBool(PinService.isSet);
@@ -90,15 +100,30 @@ final router = GoRouter(
   routes: [
     GoRoute(path: '/splash', builder: (_, __) => const SplashPage()),
     GoRoute(
-        path: '/startup-error', builder: (_, __) => const StartupErrorPage()),
+      path: '/startup-error',
+      builder: (_, __) => const StartupErrorPage(),
+    ),
     GoRoute(path: '/welcome', builder: (_, __) => const WelcomePage()),
     GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
     GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
+    GoRoute(
+      path: '/otp',
+      builder: (_, state) {
+        final email = state.extra is String ? state.extra! as String : '';
+        return OtpVerificationPage(email: email);
+      },
+    ),
+    GoRoute(
+      path: '/email-verification-success',
+      builder: (_, __) => const EmailVerificationSuccessPage(),
+    ),
     GoRoute(path: '/pin-setup', builder: (_, __) => const PinSetupPage()),
     GoRoute(path: '/lock', builder: (_, __) => const PinUnlockPage()),
     GoRoute(path: '/', builder: (_, __) => const AppShell()),
     GoRoute(
-        path: '/transactions', builder: (_, __) => const TransactionsPage()),
+      path: '/transactions',
+      builder: (_, __) => const TransactionsPage(),
+    ),
     GoRoute(path: '/accounts', builder: (_, __) => const AccountsPage()),
     GoRoute(path: '/reports', builder: (_, __) => const ReportsPage()),
     GoRoute(path: '/budgets', builder: (_, __) => const BudgetsPage()),
@@ -106,14 +131,19 @@ final router = GoRouter(
     GoRoute(path: '/search', builder: (_, __) => const SearchPage()),
     GoRoute(path: '/profile', builder: (_, __) => const ProfilePage()),
     GoRoute(
-        path: '/settings',
-        builder: (_, state) =>
-            SettingsPage(section: state.uri.queryParameters['section'])),
+      path: '/settings',
+      builder: (_, state) =>
+          SettingsPage(section: state.uri.queryParameters['section']),
+    ),
     GoRoute(path: '/devices', builder: (_, __) => const DevicesPage()),
     GoRoute(
-        path: '/notifications', builder: (_, __) => const NotificationsPage()),
+      path: '/notifications',
+      builder: (_, __) => const NotificationsPage(),
+    ),
     GoRoute(path: '/transfer', builder: (_, __) => const TransferPage()),
     GoRoute(
-        path: '/delete-account', builder: (_, __) => const DeleteAccountPage()),
+      path: '/delete-account',
+      builder: (_, __) => const DeleteAccountPage(),
+    ),
   ],
 );

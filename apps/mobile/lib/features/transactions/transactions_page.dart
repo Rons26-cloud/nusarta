@@ -8,6 +8,7 @@ import '../../core/utils/labels.dart';
 import '../../data/models/transaction.dart';
 import '../../providers/finance_providers.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/finance_load_state.dart';
 import '../../widgets/transaction_tile.dart';
 import 'add_transaction_sheet.dart';
 
@@ -79,8 +80,9 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
           Expanded(
             child: transactions.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) =>
-                  const Center(child: Text('Gagal memuat transaksi')),
+              error: (error, _) => FinanceLoadError(
+                  error: error,
+                  onRetry: () => ref.invalidate(transactionsProvider)),
               data: (txs) {
                 final filtered = txs.where((t) {
                   return switch (_filter) {

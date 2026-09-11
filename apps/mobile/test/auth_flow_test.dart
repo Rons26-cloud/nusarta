@@ -201,4 +201,15 @@ void main() {
     expect(authErrorMessage(Exception('private backend detail')),
         'Autentikasi belum berhasil. Silakan coba lagi.');
   });
+  test('401 client configuration failure is distinct from invalid credentials',
+      () {
+    expect(
+        authErrorMessage(
+            const AuthException('unauthorized', statusCode: '401')),
+        'Konfigurasi layanan akun tidak cocok. Perbarui konfigurasi aplikasi.');
+    expect(
+        authErrorMessage(const AuthException('invalid login credentials',
+            code: 'invalid_credentials', statusCode: '400')),
+        'Email atau kata sandi salah.');
+  });
 }

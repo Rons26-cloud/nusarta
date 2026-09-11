@@ -53,8 +53,8 @@ class _ShellScaffoldState extends State<_ShellScaffold> {
         indicatorColor: Theme.of(context).colorScheme.secondaryContainer,
         destinations: const [
           NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard),
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
               label: 'Beranda'),
           NavigationDestination(
               icon: Icon(Icons.swap_vert),

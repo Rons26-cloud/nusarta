@@ -6,7 +6,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthConfigurationException implements Exception {}
 
-class AuthProfileException implements Exception {}
+class AuthProfileException implements Exception {
+  const AuthProfileException([this.cause]);
+  final Object? cause;
+}
 
 String authErrorMessage(Object? error,
     {String fallback = 'Autentikasi belum berhasil. Silakan coba lagi.'}) {
@@ -14,6 +17,16 @@ String authErrorMessage(Object? error,
     return 'Layanan akun belum siap. Perbarui aplikasi atau coba lagi nanti.';
   }
   if (error is AuthProfileException) {
+    final cause = error.cause;
+    if (cause is SocketException ||
+        cause is ClientException ||
+        cause is TimeoutException) {
+      return 'Profil akun belum dapat dimuat karena koneksi terputus. Coba lagi.';
+    }
+    if (cause is PostgrestException &&
+        (cause.code == '42501' || cause.code == 'PGRST301')) {
+      return 'Profil akun tidak dapat diakses. Periksa sesi dan kebijakan akses akun.';
+    }
     return 'Profil akun belum dapat dimuat. Silakan coba masuk kembali.';
   }
   if (error is SocketException ||
@@ -30,6 +43,15 @@ String authErrorMessage(Object? error,
   if (code == 'invalid_credentials' ||
       message.contains('invalid login credentials')) {
     return 'Email atau kata sandi salah.';
+  }
+  // Supabase gateway returns 401 when the bundled public client key is invalid
+  // or belongs to a different project. This is distinct from bad credentials.
+  if (status == '401' ||
+      code == 'invalid_api_key' ||
+      code == 'apikey_invalid' ||
+      message.contains('invalid api key') ||
+      message.contains('invalid api key')) {
+    return 'Konfigurasi layanan akun tidak cocok. Perbarui konfigurasi aplikasi.';
   }
   if (code == 'user_already_exists' ||
       code == 'email_exists' ||

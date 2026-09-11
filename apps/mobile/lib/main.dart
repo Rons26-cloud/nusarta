@@ -2,16 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
-import 'core/data/supabase_client.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await SupabaseConfig.initialize().timeout(const Duration(seconds: 10));
-  } catch (_) {
-    SupabaseConfig.log(
-        'initialization failed; continuing to recoverable route');
-  }
-  SupabaseConfig.log('session restore complete');
+  debugPrint('STARTUP_1_MAIN');
+  // Render the branded splash immediately; startup is coordinated by SplashPage.
   runApp(const ProviderScope(child: NusartaApp()));
+  debugPrint('STARTUP_2_RUNAPP');
 }

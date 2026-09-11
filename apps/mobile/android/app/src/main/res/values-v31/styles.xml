@@ -1,7 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <!-- The system icon-only preview cannot represent the full artwork. -->
+        <item name="android:windowDisablePreview">false</item>
         <item name="android:windowSplashScreenBackground">#063B2F</item>
+        <!-- Android masks splash icons; show the complete artwork in Flutter. -->
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
         <item name="android:statusBarColor">#063B2F</item>
         <item name="android:navigationBarColor">#063B2F</item>
@@ -10,3 +13,4 @@
         <item name="android:windowFullscreen">false</item>
     </style>
 </resources>
+

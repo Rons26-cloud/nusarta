@@ -9,6 +9,7 @@ import '../../data/models/transaction.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/finance_providers.dart';
 import '../../widgets/cash_flow_chart.dart';
+import '../../widgets/finance_load_state.dart';
 import '../../widgets/finance_summary.dart';
 import '../../widgets/transaction_tile.dart';
 import '../transactions/add_transaction_sheet.dart';
@@ -126,7 +127,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
             accounts.when(
               loading: () => const _BalanceSkeleton(),
-              error: (_, __) => const _BalanceSkeleton(),
+              error: (error, _) => FinanceLoadError(
+                  error: error,
+                  onRetry: () => ref.invalidate(accountsProvider)),
               data: (list) {
                 final total = list
                     .where((a) => !a.isArchived)
@@ -156,7 +159,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             const SizedBox(height: 8),
             transactions.when(
               loading: () => const LinearProgressIndicator(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (error, _) => FinanceLoadError(
+                  error: error,
+                  onRetry: () => ref.invalidate(transactionsProvider)),
               data: (txs) {
                 final monthTx = txs
                     .where((t) =>
@@ -218,7 +223,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
             transactions.when(
               loading: () => const LinearProgressIndicator(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (error, _) => FinanceLoadError(
+                  error: error,
+                  onRetry: () => ref.invalidate(transactionsProvider)),
               data: (txs) {
                 if (txs.isEmpty) {
                   return _EmptyTransactions(

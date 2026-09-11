@@ -18,10 +18,14 @@ import '../data/repositories/institution_repository.dart';
 import '../data/repositories/notification_repository.dart';
 import '../data/repositories/security_repository.dart';
 import '../data/repositories/transaction_repository.dart';
+import 'auth_provider.dart';
 
 // Account providers
 final accountsProvider = FutureProvider<List<Account>>(
-  (ref) => AccountRepository.listAll(),
+  (ref) {
+    ref.watch(currentUserProvider.select((user) => user?.id));
+    return AccountRepository.listAll();
+  },
 );
 
 final accountsControllerProvider = Provider<AccountsController>((ref) {
@@ -89,7 +93,10 @@ class AccountsController {
 
 // Transaction providers
 final transactionsProvider = FutureProvider<List<Transaction>>(
-  (ref) => TransactionRepository.list(),
+  (ref) {
+    ref.watch(currentUserProvider.select((user) => user?.id));
+    return TransactionRepository.list();
+  },
 );
 
 final transactionsControllerProvider = Provider<TransactionsController>((ref) {
@@ -128,15 +135,22 @@ class TransactionsController {
 // Category providers
 final categoriesProvider =
     FutureProvider.family<List<Category>, TransactionKind?>(
-  (ref, kind) => CategoryRepository.list(kind: kind),
+  (ref, kind) {
+    ref.watch(currentUserProvider.select((user) => user?.id));
+    return CategoryRepository.list(kind: kind);
+  },
 );
 
-final allCategoriesProvider =
-    FutureProvider<List<Category>>((ref) => CategoryRepository.list());
+final allCategoriesProvider = FutureProvider<List<Category>>((ref) {
+  ref.watch(currentUserProvider.select((user) => user?.id));
+  return CategoryRepository.list();
+});
 
 // Budget & goal providers
-final budgetsProvider =
-    FutureProvider<List<Budget>>((ref) => BudgetRepository.listAll());
+final budgetsProvider = FutureProvider<List<Budget>>((ref) {
+  ref.watch(currentUserProvider.select((user) => user?.id));
+  return BudgetRepository.listAll();
+});
 
 final budgetsControllerProvider = Provider<BudgetsController>((ref) {
   return BudgetsController(ref);
@@ -157,8 +171,10 @@ class BudgetsController {
   }
 }
 
-final goalsProvider =
-    FutureProvider<List<FinancialGoal>>((ref) => GoalRepository.listActive());
+final goalsProvider = FutureProvider<List<FinancialGoal>>((ref) {
+  ref.watch(currentUserProvider.select((user) => user?.id));
+  return GoalRepository.listActive();
+});
 
 final goalsControllerProvider = Provider<GoalsController>((ref) {
   return GoalsController(ref);
@@ -196,7 +212,10 @@ final institutionsProvider = FutureProvider<List<Institution>>((ref) async {
 });
 
 final devicesProvider = FutureProvider<List<Device>>(
-  (ref) => DeviceRepository.listMine(),
+  (ref) {
+    ref.watch(currentUserProvider.select((user) => user?.id));
+    return DeviceRepository.listMine();
+  },
 );
 
 final currentDeviceIdProvider = FutureProvider<String>(
@@ -204,7 +223,10 @@ final currentDeviceIdProvider = FutureProvider<String>(
 );
 
 final notificationsProvider = FutureProvider<List<AppNotification>>(
-  (ref) => NotificationRepository.listMine(),
+  (ref) {
+    ref.watch(currentUserProvider.select((user) => user?.id));
+    return NotificationRepository.listMine();
+  },
 );
 
 final notificationsControllerProvider = Provider<NotificationsController>(
@@ -227,5 +249,8 @@ class NotificationsController {
 }
 
 final securityEventsProvider = FutureProvider<List<SecurityEvent>>(
-  (ref) => SecurityRepository.listMine(),
+  (ref) {
+    ref.watch(currentUserProvider.select((user) => user?.id));
+    return SecurityRepository.listMine();
+  },
 );

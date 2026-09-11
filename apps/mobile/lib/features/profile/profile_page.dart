@@ -4,11 +4,16 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/security/pin_service.dart';
 import '../../core/security/secure_store.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/updates/update_models.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/finance_providers.dart';
+import '../../providers/lock_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../providers/update_provider.dart';
+import '../../widgets/settings_section.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -16,286 +21,321 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final displayName = user?.userMetadata?['display_name'] as String?;
-    final shownName = (displayName != null && displayName.trim().isNotEmpty)
-        ? displayName.trim()
-        : user?.email ?? 'Pengguna';
-    final email = user?.email;
+    final metadata = user?.userMetadata ?? const <String, dynamic>{};
+    final rawName = metadata['display_name'] as String?;
+    final name = rawName == null || rawName.trim().isEmpty
+        ? 'Pengguna NUSARTA'
+        : rawName.trim();
+    final email = user?.email?.trim();
+    final phone = user?.phone?.trim();
+    final verified = user?.emailConfirmedAt != null;
+    final devices = ref.watch(devicesProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil')),
+      backgroundColor: AppColors.backgroundOff,
+      appBar: AppBar(title: const Text('Profil & Pengaturan')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+        children: [
+          _ProfileCard(
+            name: name,
+            email: email,
+            verified: verified,
+          ),
+          SettingsSection(title: 'AKUN', children: [
+            _item(context, Icons.person_outline, 'Informasi Pribadi',
+                'Kelola nama dan identitas akun', null),
+            _item(context, Icons.mail_outline, 'Email',
+                email ?? 'Belum tersedia', null),
+            if (phone != null && phone.isNotEmpty)
+              _item(
+                  context, Icons.phone_outlined, 'Nomor Telepon', phone, null),
+            _item(
+                context,
+                Icons.account_balance_wallet_outlined,
+                'Akun Keuangan',
+                'Kelola akun bank, e-wallet, dan tunai',
+                '/accounts'),
+            _item(context, Icons.flag_outlined, 'Tujuan Keuangan',
+                'Pantau target finansialmu', '/goals'),
+          ]),
+          SettingsSection(title: 'KEAMANAN', children: [
+            _statusItem(
+                context,
+                Icons.password_outlined,
+                'PIN NUSARTA',
+                PinService.isSet,
+                'Aktif',
+                'Belum diatur',
+                '/settings?section=pin'),
+            _statusItem(
+                context,
+                Icons.fingerprint,
+                'Biometrik',
+                ref.read(lockControllerProvider).isBiometricEnabled(),
+                'Aktif',
+                'Nonaktif',
+                '/settings?section=biometric'),
+            _item(context, Icons.lock_clock_outlined, 'Kunci Otomatis',
+                'Atur durasi penguncian', '/settings?section=auto-lock'),
+            _item(
+                context,
+                Icons.devices_outlined,
+                'Perangkat',
+                devices.when(
+                    data: (v) => '${v.length} perangkat',
+                    loading: () => 'MemuatÃ¢â‚¬Â¦',
+                    error: (_, __) => 'Tidak tersedia'),
+                '/devices'),
+            _item(context, Icons.history_outlined, 'Aktivitas Keamanan',
+                'Riwayat login dan keamanan', '/settings'),
+          ]),
+          SettingsSection(title: 'PREFERENSI', children: [
+            _item(context, Icons.brightness_6_outlined, 'Tema',
+                _themeLabel(themeMode), '/settings?section=theme'),
+            _item(context, Icons.currency_exchange_outlined, 'Mata Uang',
+                'Rupiah (IDR)', null),
+            _item(context, Icons.notifications_none_rounded, 'Notifikasi',
+                'Segera hadir', '/notifications'),
+          ]),
+          SettingsSection(title: 'DATA & PRIVASI', children: [
+            _item(context, Icons.privacy_tip_outlined, 'Privasi & Keamanan',
+                'Pelajari perlindungan data NUSARTA', null),
+            _item(context, Icons.download_outlined, 'Kelola Data',
+                'Data pencatatan tetap milikmu', null),
+            _item(context, Icons.person_remove_outlined, 'Hapus Akun',
+                'Hapus akun dan data secara permanen', '/delete-account',
+                destructive: true),
+          ]),
+          SettingsSection(title: 'BANTUAN & INFORMASI', children: [
+            _item(context, Icons.help_outline_rounded, 'Pusat Bantuan',
+                'Jawaban untuk pertanyaan umum', null,
+                onTap: () => _showHelp(context)),
+            _item(context, Icons.info_outline_rounded, 'Tentang NUSARTA',
+                'Keuanganmu, Dalam Kendalimu.', null,
+                onTap: () => _showAbout(context)),
+            _item(context, Icons.policy_outlined, 'Kebijakan Privasi',
+                'Segera hadir', null),
+            _item(context, Icons.description_outlined, 'Syarat & Ketentuan',
+                'Segera hadir', null),
+            _item(context, Icons.system_update_outlined, 'Versi Aplikasi',
+                'NUSARTA ${AppConfig.version}+${AppConfig.buildNumber}', null,
+                onTap: () => _checkUpdate(context, ref)),
+          ]),
+          const SizedBox(height: 20),
+          FilledButton.tonalIcon(
+            icon: const Icon(Icons.logout_rounded),
+            label: const Text('Keluar dari Akun'),
+            style: FilledButton.styleFrom(
+              foregroundColor: AppColors.expense,
+              backgroundColor: AppColors.expense.withOpacity(.08),
+              minimumSize: const Size.fromHeight(50),
+            ),
+            onPressed: () => _logout(context, ref),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _item(BuildContext context, IconData icon, String title,
+      String subtitle, String? route,
+      {VoidCallback? onTap, bool destructive = false}) {
+    return ListTile(
+      leading: Icon(icon,
+          color: destructive ? AppColors.expense : AppColors.primary),
+      title: Text(title,
+          style: destructive
+              ? const TextStyle(
+                  color: AppColors.expense, fontWeight: FontWeight.w700)
+              : null),
+      subtitle: Text(subtitle),
+      trailing: route == null ? null : const Icon(Icons.chevron_right_rounded),
+      onTap: onTap ?? (route == null ? null : () => context.push(route)),
+    );
+  }
+
+  Widget _statusItem(BuildContext context, IconData icon, String title,
+      Future<bool> status, String yes, String no, String route) {
+    return FutureBuilder<bool>(
+      future: status,
+      builder: (context, snapshot) => _item(
+        context,
+        icon,
+        title,
+        snapshot.connectionState == ConnectionState.waiting
+            ? 'MemuatÃ¢â‚¬Â¦'
+            : snapshot.data == true
+                ? yes
+                : no,
+        route,
+      ),
+    );
+  }
+
+  String _themeLabel(String mode) => switch (mode) {
+        'light' => 'Terang',
+        'dark' => 'Gelap',
+        _ => 'Mengikuti Sistem',
+      };
+
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Keluar dari NUSARTA?'),
+        content: const Text('Anda perlu masuk kembali untuk mengakses akun.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Batal')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Keluar')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await ref.read(authControllerProvider).signOut();
+    await SecureStore.clear();
+    if (context.mounted) context.go('/login');
+  }
+
+  Future<void> _checkUpdate(BuildContext context, WidgetRef ref) async {
+    final state = await ref.read(updateControllerProvider).check(force: true);
+    if (!context.mounted) return;
+    if (state.status == UpdateStatus.updateAvailable && state.release != null) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Pembaruan Tersedia'),
+          content: Text(
+              'NUSARTA v${state.release!.version}\n\n${state.release!.releaseNotes}'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Nanti')),
+            FilledButton(
+              onPressed: () {
+                launchUrl(Uri.parse(state.release!.apkDownloadUrl),
+                    mode: LaunchMode.externalApplication);
+                Navigator.pop(context);
+              },
+              child: const Text('Update Sekarang'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(state.status == UpdateStatus.error
+            ? 'Tidak dapat memeriksa pembaruan. Coba lagi.'
+            : 'Anda menggunakan versi terbaru.'),
+      ));
+    }
+  }
+
+  void _showHelp(BuildContext context) => showDialog<void>(
+        context: context,
+        builder: (_) => const AlertDialog(
+          title: Text('Pusat Bantuan'),
+          content: Text(
+              'Lupa PIN? Keluar lalu masuk kembali untuk mengatur ulang keamanan perangkat.\n\nPencatatan NUSARTA bersifat manual dan tidak mengakses PIN bank.'),
+        ),
+      );
+
+  void _showAbout(BuildContext context) => showDialog<void>(
+        context: context,
+        builder: (_) => const AlertDialog(
+          title: Text('Tentang NUSARTA'),
+          content: Text(
+              'NUSARTA (Nusa + Arta) membantu kamu mengelola pencatatan keuangan pribadi dengan aman.\n\nKeuanganmu, Dalam Kendalimu.'),
+        ),
+      );
+}
+
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard(
+      {required this.name, required this.email, required this.verified});
+  final String name;
+  final String? email;
+  final bool verified;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial =
+        name.trim().isEmpty ? 'N' : name.trim().substring(0, 1).toUpperCase();
+    final shownEmail = email == null || email!.isEmpty
+        ? 'Email belum tersedia'
+        : _maskEmail(email!);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+            colors: [AppColors.deepEmerald, AppColors.primaryDark]),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.gold.withAlpha(90)),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x18031D16), blurRadius: 18, offset: Offset(0, 8))
+        ],
+      ),
+      child: Row(
         children: [
           CircleAvatar(
-            radius: 32,
-            backgroundColor: AppColors.primary.withAlpha(31),
-            child: const Icon(Icons.person, color: AppColors.primary, size: 32),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            shownName,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          if (email != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              email,
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppColors.neutral),
-            ),
-          ],
-          const SizedBox(height: 24),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.settings_outlined),
-                  title: const Text('Keamanan'),
-                  subtitle: const Text('PIN, biometrik, perangkat & aktivitas'),
-                  onTap: () => context.push('/settings'),
-                ),
-                for (final item in const [
-                  (Icons.password_outlined, 'Ubah PIN', 'pin'),
-                  (Icons.fingerprint, 'Biometrik', 'biometric'),
-                  (Icons.timer_outlined, 'Kunci Otomatis', 'auto-lock'),
-                  (Icons.brightness_6_outlined, 'Tema', 'theme'),
-                ])
-                  ListTile(
-                      leading: Icon(item.$1),
-                      title: Text(item.$2),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () =>
-                          context.push('/settings?section=${item.$3}')),
-                ListTile(
-                  leading: const Icon(Icons.notifications_outlined),
-                  title: const Text('Notifikasi'),
-                  onTap: () => context.push('/notifications'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.swap_horiz_outlined),
-                  title: const Text('Transfer (Bank/E-Wallet)'),
-                  subtitle: const Text('Segera hadir'),
-                  onTap: () => context.push('/transfer'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.flag_outlined),
-                  title: const Text('Tujuan Keuangan'),
-                  onTap: () => context.push('/goals'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.donut_small_outlined),
-                  title: const Text('Budget'),
-                  onTap: () => context.push('/budgets'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.bar_chart_outlined),
-                  title: const Text('Laporan'),
-                  onTap: () => context.push('/reports'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.help_outline),
-                  title: const Text('Pusat Bantuan'),
-                  subtitle: const Text('Tanya jawab umum penggunaan NUSARTA'),
-                  onTap: () => showDialog(
-                    context: context,
-                    builder: (_) => const _HelpDialog(),
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: const Text('Tentang NUSARTA'),
-                  onTap: () => showDialog(
-                    context: context,
-                    builder: (_) => const _AboutDialog(),
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.system_update_outlined),
-                  title: const Text('Periksa Pembaruan'),
-                  onTap: () async {
-                    final state = await ref
-                        .read(updateControllerProvider)
-                        .check(force: true);
-                    if (!context.mounted) return;
-                    if (state.status == UpdateStatus.updateAvailable &&
-                        state.release != null) {
-                      showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                                title: const Text('Pembaruan Tersedia'),
-                                content: Text(
-                                    'NUSARTA v${state.release!.version}\n\n${state.release!.releaseNotes}'),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('Nanti')),
-                                  ElevatedButton(
-                                      onPressed: () {
-                                        launchUrl(
-                                            Uri.parse(
-                                                state.release!.apkDownloadUrl),
-                                            mode:
-                                                LaunchMode.externalApplication);
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('Update Sekarang'))
-                                ],
-                              ));
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(state.status == UpdateStatus.error
-                              ? 'Tidak dapat memeriksa pembaruan. Coba lagi.'
-                              : 'Anda menggunakan versi terbaru.')));
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.person_remove_outlined,
-                      color: AppColors.expense),
-                  title: const Text('Hapus Akun',
-                      style: TextStyle(color: AppColors.expense)),
-                  subtitle:
-                      const Text('Hapus akun dan semua data secara permanen'),
-                  onTap: () => context.push('/delete-account'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.logout, color: AppColors.expense),
-              title: const Text('Keluar',
-                  style: TextStyle(color: AppColors.expense)),
-              onTap: () async {
-                await ref.read(authControllerProvider).signOut();
-                await SecureStore.clear();
-                if (context.mounted) {
-                  context.go('/');
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'NUSARTA ${AppConfig.version}+${AppConfig.buildNumber}',
-            textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: AppColors.neutral),
-          ),
+              radius: 30,
+              backgroundColor: AppColors.cream,
+              child: Text(initial,
+                  style: const TextStyle(
+                      color: AppColors.primaryDark,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800))),
+          const SizedBox(width: 14),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text(name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text(shownEmail,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white70)),
+                const SizedBox(height: 9),
+                Row(children: [
+                  Icon(verified ? Icons.verified_rounded : Icons.info_outline,
+                      size: 16, color: AppColors.goldLight),
+                  const SizedBox(width: 5),
+                  Flexible(
+                      child: Text(
+                          verified
+                              ? 'Akun Terverifikasi'
+                              : 'Verifikasi email diperlukan',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: AppColors.goldLight,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700)))
+                ]),
+              ])),
+          const SizedBox(width: 8),
+          Image.asset('assets/brand/logo.png',
+              width: 46, height: 28, fit: BoxFit.contain),
         ],
       ),
     );
   }
 }
 
-class _HelpDialog extends StatelessWidget {
-  const _HelpDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Pusat Bantuan'),
-      content: const SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _HelpItem(
-              question: 'Lupa PIN?',
-              answer:
-                  'PIN tidak dapat dilihat kembali. Keluar lalu masuk kembali '
-                  'akan meminta konfigurasi ulang perangkat keamanan.',
-            ),
-            _HelpItem(
-              question: 'Apa itu Pindah Saldo?',
-              answer: 'Pindah saldo hanya memindahkan pencatatan antar akun '
-                  'NUSARTA dan tidak mengirim uang melalui bank.',
-            ),
-            _HelpItem(
-              question: 'Data saya aman?',
-              answer:
-                  'Semua data dilindungi autentikasi akun, PIN, dan kebijakan '
-                  'akses per pengguna.',
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Tutup'),
-        ),
-      ],
-    );
-  }
-}
-
-class _HelpItem extends StatelessWidget {
-  const _HelpItem({required this.question, required this.answer});
-
-  final String question;
-  final String answer;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(question, style: const TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(answer, style: const TextStyle(fontSize: 13)),
-        ],
-      ),
-    );
-  }
-}
-
-class _AboutDialog extends StatelessWidget {
-  const _AboutDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Tentang NUSARTA'),
-      content: const SingleChildScrollView(
-        child: Text(
-          'NUSARTA (Nusa + Arta) adalah aplikasi pencatatan keuangan pribadi '
-          'yang sederhana dan aman. "Keuanganmu, Dalam Kendalimu."\n\n'
-          'Semua pencatatan bersifat manual dan tersimpan di akun kamu, '
-          'dilindungi autentikasi serta PIN 6 digit.',
-          style: TextStyle(fontSize: 13),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Tutup'),
-        ),
-      ],
-    );
-  }
+String _maskEmail(String email) {
+  final parts = email.split('@');
+  if (parts.length != 2 || parts.first.length < 3) return email;
+  return '${parts.first.substring(0, 3)}***@${parts.last}';
 }

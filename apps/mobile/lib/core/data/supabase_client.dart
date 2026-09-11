@@ -22,9 +22,10 @@ class SupabaseConfig {
   }
 
   static Future<void> initialize() async {
+    if (_initialized) return;
     if (AppConfig.isConfigured) {
       try {
-        log('Supabase initialization started');
+        log('Supabase initialization started host=${Uri.tryParse(AppConfig.supabaseUrl)?.host ?? '-'} keyConfigured=${AppConfig.supabaseAnonKey.isNotEmpty}');
         await Supabase.initialize(
           url: AppConfig.supabaseUrl,
           publishableKey: AppConfig.supabaseAnonKey,

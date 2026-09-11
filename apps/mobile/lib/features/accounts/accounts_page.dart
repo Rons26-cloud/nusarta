@@ -13,6 +13,7 @@ import '../../data/models/transaction.dart';
 import '../../providers/finance_providers.dart';
 import '../../widgets/account_status_badge.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/finance_load_state.dart';
 import '../../widgets/transaction_tile.dart';
 import 'add_account_sheet.dart';
 
@@ -41,10 +42,11 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Akun')),
+      appBar: AppBar(title: const Text('Akun Keuangan')),
       body: accounts.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => const Center(child: Text('Gagal memuat akun')),
+        error: (error, _) => FinanceLoadError(
+            error: error, onRetry: () => ref.invalidate(accountsProvider)),
         data: (list) {
           final active = list.where((a) => !a.isArchived).toList();
           final archived = list.where((a) => a.isArchived).toList();

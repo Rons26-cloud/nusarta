@@ -137,7 +137,9 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
                   child: LinearProgressIndicator(),
                 ),
               DropdownButtonFormField<Object?>(
-                initialValue: _selected,
+                // Keep compatible with Flutter 3.24 until the toolchain upgrade is verified.
+                // ignore: deprecated_member_use
+                value: _selected,
                 isExpanded: true,
                 hint: const Text('Pilih sumber akun (opsional)'),
                 items: [
@@ -177,7 +179,9 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
                 ),
             ] else
               DropdownButtonFormField<Object?>(
-                initialValue: _selected,
+                // Keep compatible with Flutter 3.24 until the toolchain upgrade is verified.
+                // ignore: deprecated_member_use
+                value: _selected,
                 isExpanded: true,
                 hint: const Text('Tipe akun'),
                 items: [

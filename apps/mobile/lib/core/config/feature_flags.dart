@@ -10,6 +10,9 @@ enum FeatureFlag {
   transferRecipientValidation,
   pushNotifications,
   institutionCatalog,
+
+  /// Requires the hosted Supabase confirmation template to contain {{ .Token }}.
+  emailOtpVerification,
 }
 
 class FeatureFlags {
@@ -25,6 +28,7 @@ class FeatureFlags {
     FeatureFlag.transferRecipientValidation: false,
     FeatureFlag.pushNotifications: false,
     FeatureFlag.institutionCatalog: true,
+    FeatureFlag.emailOtpVerification: true,
   };
 
   static bool isEnabled(FeatureFlag flag, {Map<FeatureFlag, bool>? overrides}) {
