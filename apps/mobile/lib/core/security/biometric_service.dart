@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:local_auth/error_codes.dart' as auth_error;
 import 'package:local_auth/local_auth.dart';
 
+import 'auto_lock_service.dart';
 import 'secure_store.dart';
 
 /// Biometric app unlock.
@@ -40,7 +41,7 @@ class BiometricService {
           biometricOnly: true,
         ),
       );
-      if (ok) await AppSecureStore.setLastUnlockAt(DateTime.now());
+      if (ok) await AutoLockService.recordActivity();
       return ok;
     } catch (e) {
       // User cancelled, device no longer enrolled, etc.

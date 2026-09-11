@@ -4,13 +4,20 @@ import 'secure_store.dart';
 class AutoLockService {
   AutoLockService._();
 
+  static bool _unlockedThisProcess = false;
+  static void lock() => _unlockedThisProcess = false;
+
   static Future<bool> shouldLock() async {
+    if (!_unlockedThisProcess) return true;
     final minutes = await AppSecureStore.autoLockMinutes;
     final lastUnlock = await AppSecureStore.lastUnlockAt;
-    if (minutes <= 0 || lastUnlock == null) return false;
+    if (lastUnlock == null) return true;
+    if (minutes <= 0) return false;
     return DateTime.now().difference(lastUnlock).inMinutes >= minutes;
   }
 
-  static Future<void> recordActivity() =>
-      AppSecureStore.setLastUnlockAt(DateTime.now());
+  static Future<void> recordActivity() async {
+    await AppSecureStore.setLastUnlockAt(DateTime.now());
+    _unlockedThisProcess = true;
+  }
 }

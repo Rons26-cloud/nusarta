@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/auth_error.dart';
+import '../../core/utils/email_validation.dart';
 import '../../providers/auth_provider.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
@@ -33,7 +35,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_loading || !_formKey.currentState!.validate()) return;
     setState(() {
       _loading = true;
       _message = null;
@@ -41,20 +43,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     });
     try {
       final controller = ref.read(authControllerProvider);
-      await controller.signUp(
+      final result = await controller.signUp(
         _email.text.trim(),
         _password.text,
         name: _name.text.trim(),
       );
       if (mounted) {
+        if (result == RegistrationResult.authenticated) {
+          context.go('/');
+          return;
+        }
         setState(() {
           _message =
-              'Akun dibuat. Cek email kamu untuk konfirmasi, lalu masuk.';
+              'Akun berhasil dibuat. Periksa email Anda untuk melakukan verifikasi.';
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _error = authErrorMessage(e));
+        setState(() => _error = authErrorMessage(e,
+            fallback: 'Pendaftaran belum berhasil. Silakan coba lagi.'));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -96,7 +103,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         labelText: 'Email',
                         prefixIcon: Icon(Icons.mail_outline),
                       ),
-                      validator: (v) => v != null && v.contains('@')
+                      validator: (v) => v != null && isValidEmail(v)
                           ? null
                           : 'Masukkan email valid',
                     ),

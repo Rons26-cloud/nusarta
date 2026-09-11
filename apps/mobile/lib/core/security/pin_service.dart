@@ -29,6 +29,9 @@ class PinService {
   static const Duration lockoutDuration = Duration(minutes: 5);
 
   static Future<void> setPin(String pin) async {
+    if (!RegExp(r'^\d{6}$').hasMatch(pin)) {
+      throw ArgumentError('PIN must contain exactly six digits');
+    }
     final salt = _randomSalt();
     final hash = _derive(pin, salt, _defaultIterations);
     await SecureStore.write(SecureKeys.pinSalt, salt);

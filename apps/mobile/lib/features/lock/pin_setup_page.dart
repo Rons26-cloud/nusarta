@@ -80,7 +80,18 @@ class _PinSetupPageState extends ConsumerState<PinSetupPage> {
     }
     setState(() => _saving = true);
     final controller = ref.read(lockControllerProvider);
-    await controller.setupPin(_pin);
+    try {
+      await controller.setupPin(_pin);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = 'PIN belum dapat disimpan. Silakan coba lagi.';
+          _confirm = '';
+        });
+      }
+      return;
+    }
     if (!mounted) return;
 
     // Ask explicitly before enabling biometric — never silently.

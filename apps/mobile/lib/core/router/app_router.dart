@@ -36,7 +36,7 @@ final router = GoRouter(
       return null;
     }
     final loggedIn = SupabaseConfig.isInitialized &&
-        SupabaseConfig.client.auth.currentUser != null;
+        SupabaseConfig.client.auth.currentSession != null;
     if (!AppConfig.isConfigured || !SupabaseConfig.isInitialized) {
       // A clean install is allowed to reach onboarding even when the optional
       // backend configuration is absent. Login and sync surface their own
@@ -51,21 +51,24 @@ final router = GoRouter(
     }
     final location = state.matchedLocation;
 
-    final hasPin = await startupBool(PinService.isSet);
-    if (hasPin == null) return '/startup-error';
-    SupabaseConfig.log('PIN state complete');
-
     // Signed out.
     if (!loggedIn) {
       if (location == '/login' || location == '/register') return null;
       return '/welcome';
     }
 
+    final hasPin = await startupBool(PinService.isSet);
+    if (hasPin == null) return '/startup-error';
+    SupabaseConfig.log('PIN state complete');
+
     // Signed in.
     if (location == '/login' ||
         location == '/register' ||
         location == '/welcome') {
-      return hasPin ? '/' : '/pin-setup';
+      if (!hasPin) return '/pin-setup';
+      final locked = await startupBool(AutoLockService.shouldLock());
+      if (locked == null) return '/startup-error';
+      return locked ? '/lock' : '/';
     }
 
     // PIN setup.
