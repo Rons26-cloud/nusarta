@@ -175,8 +175,8 @@ class _PinSetupPageState extends ConsumerState<PinSetupPage> {
                   PinKeypad(
                     enabled: !_saving,
                     buttonColor: AppColors.primaryDark,
-                    highlightColor: AppColors.primary.withOpacity(0.18),
-                    keyFill: AppColors.primary.withOpacity(0.08),
+                    highlightColor: AppColors.primary.withAlpha(46),
+                    keyFill: AppColors.primary.withAlpha(20),
                     onDigit: _onDigit,
                     onDelete: _onDelete,
                   ),

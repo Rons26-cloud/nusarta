@@ -6,9 +6,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/config/app_config.dart';
 import '../../core/security/secure_store.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/updates/update_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/update_provider.dart';
-import '../../core/updates/update_models.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -29,7 +29,7 @@ class ProfilePage extends ConsumerWidget {
         children: [
           CircleAvatar(
             radius: 32,
-            backgroundColor: AppColors.primary.withOpacity(0.12),
+            backgroundColor: AppColors.primary.withAlpha(31),
             child: const Icon(Icons.person, color: AppColors.primary, size: 32),
           ),
           const SizedBox(height: 12),
@@ -70,7 +70,7 @@ class ProfilePage extends ConsumerWidget {
                       title: Text(item.$2),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () =>
-                          context.push('/settings?section=' + item.$3)),
+                          context.push('/settings?section=${item.$3}')),
                 ListTile(
                   leading: const Icon(Icons.notifications_outlined),
                   title: const Text('Notifikasi'),

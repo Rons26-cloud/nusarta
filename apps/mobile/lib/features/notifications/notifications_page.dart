@@ -102,7 +102,7 @@ class _NotificationTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(vertical: 2),
       leading: CircleAvatar(
-        backgroundColor: AppColors.primary.withOpacity(0.1),
+        backgroundColor: AppColors.primary.withAlpha(26),
         child: Icon(icon, color: AppColors.primary, size: 20),
       ),
       title: Row(

@@ -3,9 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/config/app_config.dart';
 import '../../core/data/supabase_client.dart';
 import '../../core/security/auto_lock_service.dart';
-import '../../core/startup/startup_gate.dart';
-import '../../features/startup/startup_error_page.dart';
 import '../../core/security/pin_service.dart';
+import '../../core/startup/startup_gate.dart';
 import '../../features/accounts/accounts_page.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/auth/register_page.dart';
@@ -22,6 +21,7 @@ import '../../features/search/search_page.dart';
 import '../../features/security/devices_page.dart';
 import '../../features/settings/settings_page.dart';
 import '../../features/splash/splash_page.dart';
+import '../../features/startup/startup_error_page.dart';
 import '../../features/transactions/transactions_page.dart';
 import '../../features/transfers/transfer_page.dart';
 import '../../features/welcome/welcome_page.dart';
@@ -32,7 +32,9 @@ final router = GoRouter(
   redirect: (context, state) async {
     // Branding only; the next route still passes every security gate below.
     if (state.matchedLocation == '/splash' ||
-        state.matchedLocation == '/startup-error') return null;
+        state.matchedLocation == '/startup-error') {
+      return null;
+    }
     final loggedIn = SupabaseConfig.isInitialized &&
         SupabaseConfig.client.auth.currentUser != null;
     if (!AppConfig.isConfigured || !SupabaseConfig.isInitialized) {
@@ -42,7 +44,9 @@ final router = GoRouter(
       if (!loggedIn &&
           (state.matchedLocation == '/welcome' ||
               state.matchedLocation == '/login' ||
-              state.matchedLocation == '/register')) return null;
+              state.matchedLocation == '/register')) {
+        return null;
+      }
       return '/welcome';
     }
     final location = state.matchedLocation;

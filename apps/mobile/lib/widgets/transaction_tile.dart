@@ -47,10 +47,10 @@ class TransactionTile extends StatelessWidget {
       onTap: onTap,
       leading: CircleAvatar(
         backgroundColor: isIncome
-            ? AppColors.income.withOpacity(0.12)
+            ? AppColors.income.withAlpha(31)
             : isTransfer
-                ? AppColors.accent.withOpacity(0.15)
-                : AppColors.expense.withOpacity(0.12),
+                ? AppColors.accent.withAlpha(38)
+                : AppColors.expense.withAlpha(31),
         child: Icon(_icon,
             color: isIncome
                 ? AppColors.income

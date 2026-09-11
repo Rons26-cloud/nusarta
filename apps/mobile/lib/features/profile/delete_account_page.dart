@@ -123,13 +123,13 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
                 ?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
         Card(
-          color: AppColors.expense.withOpacity(0.06),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+          color: AppColors.expense.withAlpha(15),
+          child: const Padding(
+            padding: EdgeInsets.all(16),
             child: Text(
               'Data akun dan catatan keuangan yang terkait akan dihapus '
               'secara permanen. Tindakan ini tidak dapat dibatalkan.',
-              style: const TextStyle(color: Color(0xFF7E2419)),
+              style: TextStyle(color: Color(0xFF7E2419)),
             ),
           ),
         ),
@@ -197,11 +197,11 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
                 ?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
         Card(
-          color: AppColors.expense.withOpacity(0.06),
+          color: AppColors.expense.withAlpha(15),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Akun ${_email} dan semua data terkait akan dihapuskan dari '
+              'Akun $_email dan semua data terkait akan dihapuskan dari '
               'server. Tidak ada cara untuk mengembalikannya.',
               style: const TextStyle(color: Color(0xFF7E2419)),
             ),

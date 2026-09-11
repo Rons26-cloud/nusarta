@@ -100,7 +100,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
+                    color: AppColors.accent.withAlpha(26),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -228,9 +228,8 @@ class _AccountTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Card(
         margin: EdgeInsets.zero,
-        color: archived
-            ? Theme.of(context).cardTheme.color?.withOpacity(0.6)
-            : null,
+        color:
+            archived ? Theme.of(context).cardTheme.color?.withAlpha(153) : null,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
@@ -240,7 +239,7 @@ class _AccountTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundColor: AppColors.primary.withAlpha(26),
                   child: institution?.logoUrl == null
                       ? Icon(typeIcon, color: AppColors.primary)
                       : ClipOval(
@@ -466,7 +465,7 @@ class _AccountDetailsSheetState extends ConsumerState<_AccountDetailsSheet> {
                     children: [
                       CircleAvatar(
                         radius: 24,
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        backgroundColor: AppColors.primary.withAlpha(26),
                         child: Icon(icon, color: AppColors.primary),
                       ),
                       const SizedBox(width: 12),

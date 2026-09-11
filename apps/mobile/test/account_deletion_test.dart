@@ -17,8 +17,8 @@ void main() {
                 gateway: _MockGateway(), onLocalStateCleared: () async {}),
           ),
         ],
-        child: MaterialApp(
-          home: const DeleteAccountPage(),
+        child: const MaterialApp(
+          home: DeleteAccountPage(),
         ),
       ),
     );
@@ -40,8 +40,8 @@ void main() {
                 gateway: _MockGateway(), onLocalStateCleared: () async {}),
           ),
         ],
-        child: MaterialApp(
-          home: const DeleteAccountPage(),
+        child: const MaterialApp(
+          home: DeleteAccountPage(),
         ),
       ),
     );
@@ -64,8 +64,8 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(
-          home: const DeleteAccountPage(),
+        child: const MaterialApp(
+          home: DeleteAccountPage(),
         ),
       ),
     );
@@ -94,8 +94,8 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(
-          home: const DeleteAccountPage(),
+        child: const MaterialApp(
+          home: DeleteAccountPage(),
         ),
       ),
     );
@@ -127,8 +127,8 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(
-          home: const DeleteAccountPage(),
+        child: const MaterialApp(
+          home: DeleteAccountPage(),
         ),
       ),
     );
@@ -176,8 +176,8 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(
-          home: const DeleteAccountPage(),
+        child: const MaterialApp(
+          home: DeleteAccountPage(),
         ),
       ),
     );
@@ -211,8 +211,8 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(
-          home: const DeleteAccountPage(),
+        child: const MaterialApp(
+          home: DeleteAccountPage(),
         ),
       ),
     );

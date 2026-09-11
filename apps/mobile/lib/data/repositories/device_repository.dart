@@ -26,7 +26,7 @@ class DeviceRepository {
 
       final identifier = await AppSecureStore.getOrCreateDeviceId();
       final platform = _detectPlatform();
-      final version = '${AppConfig.version}+${AppConfig.buildNumber}';
+      const version = '${AppConfig.version}+${AppConfig.buildNumber}';
       final biometricEnabled = await AppSecureStore.isBiometricEnabled;
 
       final existing = await SupabaseConfig.client

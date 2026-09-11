@@ -14,8 +14,9 @@ class UpdateService {
         await SecureStore.read(SecureKeys.updateCheckedAt) ?? '');
     if (!force &&
         last != null &&
-        DateTime.now().difference(last) < cacheInterval)
+        DateTime.now().difference(last) < cacheInterval) {
       return const UpdateState(UpdateStatus.latest);
+    }
     try {
       final info = await PackageInfo.fromPlatform();
       final latest = await source.latestStable();

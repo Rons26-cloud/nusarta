@@ -208,7 +208,7 @@ class _PinUnlockPageState extends ConsumerState<PinUnlockPage> {
                   Text(
                     _locked ? 'Uji coba melebihi batas' : 'Masukkan PIN Anda',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    style: TextStyle(color: Colors.white.withAlpha(179)),
                   ),
                   const SizedBox(height: 28),
                   PinDots(count: _pin.length, dotColor: Colors.white),
@@ -227,7 +227,7 @@ class _PinUnlockPageState extends ConsumerState<PinUnlockPage> {
                       _countdownLabel,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withAlpha(204),
                           fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -236,7 +236,7 @@ class _PinUnlockPageState extends ConsumerState<PinUnlockPage> {
                     enabled: !_locked && !_loading,
                     buttonColor: Colors.white,
                     highlightColor: Colors.white24,
-                    keyFill: AppColors.primary.withOpacity(0.28),
+                    keyFill: AppColors.primary.withAlpha(71),
                     biometricColor: AppColors.accentLight,
                     onDigit: _onDigit,
                     onDelete: _onDelete,
@@ -251,7 +251,7 @@ class _PinUnlockPageState extends ConsumerState<PinUnlockPage> {
                         enabled ? 'atau gunakan biometrik' : '',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            color: AppColors.accentLight.withOpacity(0.9),
+                            color: AppColors.accentLight.withAlpha(230),
                             fontSize: 13,
                             fontWeight: FontWeight.w500),
                       );

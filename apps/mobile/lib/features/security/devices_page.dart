@@ -72,7 +72,7 @@ class DevicesPage extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withOpacity(0.1),
+          backgroundColor: AppColors.primary.withAlpha(26),
           child: Icon(
             switch (device.platform) {
               DevicePlatform.android || DevicePlatform.ios => Icons.smartphone,
@@ -97,7 +97,7 @@ class DevicesPage extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.income.withOpacity(0.12),
+                  color: AppColors.income.withAlpha(31),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: const Text(

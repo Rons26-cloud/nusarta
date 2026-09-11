@@ -34,7 +34,9 @@ class SupabaseConfig {
         log('Supabase initialization complete');
       } catch (error) {
         _initializationError = error;
-        if (kDebugMode) debugPrint('STARTUP FAILED AT: supabase initialization');
+        if (kDebugMode) {
+          debugPrint('STARTUP FAILED AT: supabase initialization');
+        }
         rethrow;
       }
     } else if (kDebugMode) {

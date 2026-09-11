@@ -36,15 +36,15 @@ class AccountStatusBadge extends StatelessWidget {
             AppColors.neutral,
           ),
         AccountBadgeState.connected => (
-            AppColors.income.withOpacity(0.12),
+            AppColors.income.withAlpha(31),
             AppColors.income,
           ),
         AccountBadgeState.pending => (
-            AppColors.accentLight.withOpacity(0.25),
+            AppColors.accentLight.withAlpha(64),
             AppColors.accent,
           ),
         AccountBadgeState.needsAttention => (
-            AppColors.expense.withOpacity(0.1),
+            AppColors.expense.withAlpha(26),
             AppColors.expense,
           ),
         AccountBadgeState.revoked => (

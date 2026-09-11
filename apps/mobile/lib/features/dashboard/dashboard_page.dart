@@ -8,9 +8,9 @@ import '../../core/theme/app_colors.dart';
 import '../../data/models/transaction.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/finance_providers.dart';
-import '../../widgets/transaction_tile.dart';
-import '../../widgets/finance_summary.dart';
 import '../../widgets/cash_flow_chart.dart';
+import '../../widgets/finance_summary.dart';
+import '../../widgets/transaction_tile.dart';
 import '../transactions/add_transaction_sheet.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -386,8 +386,7 @@ class _BalanceCard extends StatelessWidget {
                 color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
-          Text(subtitle,
-              style: TextStyle(color: Colors.white.withOpacity(0.8))),
+          Text(subtitle, style: TextStyle(color: Colors.white.withAlpha(204))),
         ],
       ),
     );
@@ -402,7 +401,7 @@ class _BalanceSkeleton extends StatelessWidget {
     return Container(
       height: 120,
       decoration: BoxDecoration(
-        color: AppColors.primaryLight.withOpacity(0.15),
+        color: AppColors.primaryLight.withAlpha(38),
         borderRadius: BorderRadius.circular(20),
       ),
     );

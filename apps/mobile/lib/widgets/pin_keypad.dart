@@ -157,10 +157,10 @@ class _KeyButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w600,
-              color: color.withOpacity(enabled ? 1 : 0.35),
+              color: color.withAlpha(enabled ? 255 : 89),
             ),
           )
-        : Icon(icon, color: color.withOpacity(enabled ? 1 : 0.35), size: 26);
+        : Icon(icon, color: color.withAlpha(enabled ? 255 : 89), size: 26);
     return SizedBox(
       width: 68,
       height: 68,

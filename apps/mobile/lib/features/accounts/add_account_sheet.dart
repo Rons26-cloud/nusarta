@@ -137,15 +137,15 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
                   child: LinearProgressIndicator(),
                 ),
               DropdownButtonFormField<Object?>(
-                value: _selected,
+                initialValue: _selected,
                 isExpanded: true,
                 hint: const Text('Pilih sumber akun (opsional)'),
                 items: [
-                  DropdownMenuItem(
+                  const DropdownMenuItem(
                     value: _ManualSource.cash,
                     child: Text('Kas / Tunai'),
                   ),
-                  DropdownMenuItem(
+                  const DropdownMenuItem(
                     value: _ManualSource.custom,
                     child: Text('Akun Lainnya (Manual)'),
                   ),
@@ -177,7 +177,7 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
                 ),
             ] else
               DropdownButtonFormField<Object?>(
-                value: _selected,
+                initialValue: _selected,
                 isExpanded: true,
                 hint: const Text('Tipe akun'),
                 items: [
@@ -207,8 +207,9 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
               keyboardType: TextInputType.number,
               maxLength: 4,
               onChanged: (_) {
-                if (_lastFourError != null)
+                if (_lastFourError != null) {
                   setState(() => _lastFourError = null);
+                }
               },
               decoration: InputDecoration(
                 labelText: '4 Digit Terakhir (opsional)',
@@ -247,7 +248,7 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.1),
+                color: AppColors.accent.withAlpha(26),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(

@@ -70,7 +70,7 @@ class _BudgetsPageState extends ConsumerState<BudgetsPage> {
             itemCount: visible.length + 1,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, i) {
-              if (i == 0)
+              if (i == 0) {
                 return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -84,7 +84,7 @@ class _BudgetsPageState extends ConsumerState<BudgetsPage> {
                       ]),
                       const SizedBox(height: 12),
                       FinanceSummary(
-                          title: 'Total budget · ' + _periodLabel(_period),
+                          title: 'Total budget · ${_periodLabel(_period)}',
                           amount: total,
                           details: [
                             ('Terpakai', spentTotal),
@@ -95,6 +95,7 @@ class _BudgetsPageState extends ConsumerState<BudgetsPage> {
                             padding: EdgeInsets.all(16),
                             child: Text('Belum ada budget pada periode ini.')),
                     ]);
+              }
               final b = visible[i - 1];
               final cat = categories
                       .where((c) => c.id == b.categoryId)

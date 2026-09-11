@@ -83,7 +83,7 @@ class TransferInfoBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.accent.withOpacity(0.1),
+        color: AppColors.accent.withAlpha(26),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

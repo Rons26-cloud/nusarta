@@ -398,7 +398,7 @@ class _SecurityActivitySection extends ConsumerWidget {
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                   leading: CircleAvatar(
                     radius: 18,
-                    backgroundColor: _eventColor(event).withOpacity(0.12),
+                    backgroundColor: _eventColor(event).withAlpha(31),
                     child: Icon(_eventIcon(event.category),
                         size: 18, color: _eventColor(event)),
                   ),

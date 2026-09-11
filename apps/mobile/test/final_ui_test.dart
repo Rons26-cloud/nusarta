@@ -79,7 +79,7 @@ final transactions = [
       occurredAt: DateTime.now(),
       note: 'Belanja kebutuhan rumah tangga untuk satu minggu'),
 ];
-final fixtureUser = User(
+const fixtureUser = User(
     id: 'u',
     appMetadata: {},
     userMetadata: {'display_name': 'Pengguna Pengujian'},

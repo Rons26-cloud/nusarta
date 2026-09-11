@@ -15,13 +15,15 @@ class GithubReleaseSource implements UpdateSource {
         headers: const {
           'Accept': 'application/vnd.github+json'
         }).timeout(const Duration(seconds: 8));
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw Exception('Release service unavailable');
+    }
     final decoded = jsonDecode(response.body);
     if (decoded is! List) return null;
     for (final item in decoded) {
-      if (item is! Map || item['draft'] == true || item['prerelease'] == true)
+      if (item is! Map || item['draft'] == true || item['prerelease'] == true) {
         continue;
+      }
       final tag = item['tag_name'];
       if (tag is String && excludedReleaseTags.contains(tag)) continue;
       final version = _normalizeVersion(tag);
