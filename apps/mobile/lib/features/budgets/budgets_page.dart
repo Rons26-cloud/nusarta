@@ -263,7 +263,7 @@ class _AddBudgetSheetState extends ConsumerState<_AddBudgetSheet> {
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               isExpanded: true,
-              value: _categoryId,
+              initialValue: _categoryId,
               decoration: const InputDecoration(labelText: 'Kategori'),
               items: widget.categories
                   .map<DropdownMenuItem<String>>(

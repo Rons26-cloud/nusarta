@@ -21,18 +21,21 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.24.3"
+          flutter-version: "3.47.2"
 
       - name: Enable Android licenses
         run: |
           flutter config --no-analytics
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
 
+      - name: Prepare compile-time configuration
+        run: cp lib/core/config/app_config.example.dart lib/core/config/app_config.dart
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Format check
-        run: dart format --set-exit-if-changed lib test
+        run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze
         run: flutter analyze
