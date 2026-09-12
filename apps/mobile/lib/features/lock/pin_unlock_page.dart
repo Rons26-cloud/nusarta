@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/security/biometric_service.dart';
 import '../../core/security/pin_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/email_validation.dart';
+import '../../features/auth/otp_verification_page.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/lock_provider.dart';
 import '../../widgets/pin_keypad.dart';
@@ -116,21 +118,60 @@ class _PinUnlockPageState extends ConsumerState<PinUnlockPage> {
   Future<void> _showForgotPin() async {
     final user = ref.read(currentUserProvider);
     final email = user?.email?.trim() ?? '';
-    await showDialog<void>(
+    final proceed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Lupa PIN?'),
         content: Text(
           email.isEmpty
-              ? 'PIN hanya disimpan di perangkat ini dan tidak dapat '
-                  'dipulihkan. Reset PIN akan mengeluarkan Anda dari akun '
-                  'agar dapat masuk kembali dan membuat PIN baru.'
-              : 'PIN hanya disimpan di perangkat ini dan tidak dapat '
-                  'dipulihkan. Reset PIN akan mengeluarkan Anda dari akun '
-                  'agar dapat masuk kembali dengan email terdaftar:\n\n'
-                  '$email\n\n'
-                  'dan membuat PIN baru.',
+              ? 'Reset PIN dilakukan dengan kode verifikasi yang dikirim ke '
+                  'email terdaftar untuk memastikan akun ini milikmu.'
+              : 'Reset PIN dilakukan dengan kode verifikasi yang kami kirim ke '
+                  'email terdaftar:\n\n$email',
           textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Lanjut'),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true || !mounted) return;
+    await _startPinResetFlow();
+  }
+
+  Future<void> _startPinResetFlow() async {
+    final user = ref.read(currentUserProvider);
+    final textController = TextEditingController(text: user?.email ?? '');
+    final target = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Verifikasi Email'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Kami akan mengirim kode verifikasi 6 digit ke email ini. '
+              'Kode dipakai untuk memastikan akun milikmu sebelum PIN '
+              'dihapus dan dibuat baru.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: textController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email terdaftar',
+                prefixIcon: Icon(Icons.mail_outline),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -138,31 +179,55 @@ class _PinUnlockPageState extends ConsumerState<PinUnlockPage> {
             child: const Text('Batal'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.expense,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _resetPin();
-            },
-            child: const Text('Reset PIN'),
+            onPressed: () => Navigator.pop(ctx, textController.text.trim()),
+            child: const Text('Kirim Kode'),
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _resetPin() async {
+    textController.dispose();
+    if (target == null || target.isEmpty) return;
+    if (!isValidEmail(target)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Masukkan email yang valid.'),
+        ));
+      }
+      return;
+    }
     setState(() => _loading = true);
     try {
-      await ref.read(authControllerProvider).signOut();
+      await ref
+          .read(authControllerProvider)
+          .resendOtp(email: target, purpose: OtpPurpose.passwordRecovery);
     } catch (_) {
-      // Proceed with a local reset even if the remote session cannot sign out.
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text(
+            'Kode verifikasi gagal dikirim. Pastikan email terdaftar benar.'),
+      ));
+      return;
     }
+    if (!mounted) return;
+    setState(() => _loading = false);
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => OtpVerificationPage(
+          email: target,
+          purpose: OtpPurpose.passwordRecovery,
+          onVerified: _applyPinReset,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _applyPinReset() async {
+    // Email ownership was verified via recovery OTP. Clear the local PIN and
+    // biometric references so a brand new PIN is required right away.
     await ref.read(lockControllerProvider).logout();
     if (!mounted) return;
-    context.go('/login');
+    context.go('/pin-setup');
   }
 
   void _onDelete() {
@@ -291,7 +356,7 @@ class _PinUnlockPageState extends ConsumerState<PinUnlockPage> {
                   ),
                   const SizedBox(height: 8),
                   TextButton.icon(
-                    onPressed: _locked ? null : _showForgotPin,
+                    onPressed: _showForgotPin,
                     icon: const Icon(Icons.help_outline,
                         size: 16, color: Colors.white70),
                     label: const Text('Lupa PIN?',
