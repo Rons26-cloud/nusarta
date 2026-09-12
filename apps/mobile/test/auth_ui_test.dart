@@ -11,9 +11,12 @@ void main() {
     for (final page in [const LoginPage(), const RegisterPage()]) {
       testWidgets('${page.runtimeType} keyboard $width', (tester) async {
         final router = await preview.mount(tester, page, width, false);
+        expect(find.byType(TextFormField),
+            findsNWidgets(page is LoginPage ? 2 : 4));
         tester.view.viewInsets = const FakeViewPadding(bottom: 300);
         await tester.pumpAndSettle();
-        await tester.drag(find.byType(Scrollable).last, const Offset(0, -1500));
+        await tester.drag(
+            find.byType(SingleChildScrollView), const Offset(0, -1500));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         final button = find.widgetWithText(

@@ -8,6 +8,7 @@ import '../../core/utils/auth_error.dart';
 import '../../core/utils/email_validation.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/nusarta_brand.dart';
+import '../../widgets/nusarta_entry_scaffold.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -73,8 +74,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   @override
-  Widget build(BuildContext context) => NusartaAuthScaffold(
+  Widget build(BuildContext context) => NusartaEntryScaffold(
         artworkAsset: 'assets/brand/rigister.png',
+        title: 'Buat Akun NUSARTA',
+        subtitle:
+            'Mulai kelola keuanganmu dengan lebih mudah, aman, dan terarah.',
         onBack: () => context.go('/welcome'),
         child: Form(
           key: _formKey,
@@ -177,6 +181,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               Center(
                 child: Wrap(
                   alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     const Text('Sudah punya akun? '),
                     TextButton(

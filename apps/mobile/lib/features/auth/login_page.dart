@@ -7,6 +7,7 @@ import '../../core/utils/auth_error.dart';
 import '../../core/utils/email_validation.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/nusarta_brand.dart';
+import '../../widgets/nusarta_entry_scaffold.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -102,8 +103,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   @override
-  Widget build(BuildContext context) => NusartaAuthScaffold(
+  Widget build(BuildContext context) => NusartaEntryScaffold(
         artworkAsset: 'assets/brand/login_defoult.png',
+        title: 'Selamat Datang Kembali',
+        subtitle: 'Masuk untuk melanjutkan mengelola keuanganmu.',
+        footerFraction: .17,
         onBack: () => context.go('/welcome'),
         child: Form(
           key: _formKey,
@@ -164,12 +168,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 onPressed: _loading ? null : _showGooglePlaceholder),
             const SizedBox(height: 14),
             Center(
-                child: Wrap(alignment: WrapAlignment.center, children: [
-              const Text('Belum punya akun? '),
-              TextButton(
-                  onPressed: _loading ? null : () => context.push('/register'),
-                  child: const Text('Daftar'))
-            ])),
+                child: Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                  const Text('Belum punya akun? '),
+                  TextButton(
+                      onPressed:
+                          _loading ? null : () => context.push('/register'),
+                      child: const Text('Daftar'))
+                ])),
           ]),
         ),
       );
