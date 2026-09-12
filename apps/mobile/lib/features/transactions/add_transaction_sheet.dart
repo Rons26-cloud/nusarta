@@ -228,7 +228,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               isExpanded: true,
-              initialValue: _accountId,
+              // ignore: deprecated_member_use
+              value: _accountId,
               decoration: InputDecoration(
                 labelText:
                     _kind == TransactionKind.transfer ? 'Dari Akun' : 'Akun',
@@ -243,7 +244,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 isExpanded: true,
-                initialValue: _toAccountId,
+                // ignore: deprecated_member_use
+                value: _toAccountId,
                 decoration: const InputDecoration(labelText: 'Ke Akun'),
                 items: activeAccounts
                     .map((a) => DropdownMenuItem(
@@ -265,7 +267,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 isExpanded: true,
-                initialValue: _categoryId,
+                // ignore: deprecated_member_use
+                value: _categoryId,
                 decoration: const InputDecoration(labelText: 'Kategori'),
                 items: categories
                     .map((c) =>

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/security/biometric_service.dart';
 import '../../core/security/pin_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/lock_provider.dart';
 import '../../widgets/pin_keypad.dart';
 
@@ -113,24 +114,55 @@ class _PinUnlockPageState extends ConsumerState<PinUnlockPage> {
   }
 
   Future<void> _showForgotPin() async {
+    final user = ref.read(currentUserProvider);
+    final email = user?.email?.trim() ?? '';
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Lupa PIN?'),
-        content: const Text(
-          'PIN hanya disimpan di perangkat ini dan tidak dapat dipulihkan. '
-          'Keluar dari akun dan masuk kembali akan meminta kamu membuat PIN '
-          'baru.',
+        content: Text(
+          email.isEmpty
+              ? 'PIN hanya disimpan di perangkat ini dan tidak dapat '
+                  'dipulihkan. Reset PIN akan mengeluarkan Anda dari akun '
+                  'agar dapat masuk kembali dan membuat PIN baru.'
+              : 'PIN hanya disimpan di perangkat ini dan tidak dapat '
+                  'dipulihkan. Reset PIN akan mengeluarkan Anda dari akun '
+                  'agar dapat masuk kembali dengan email terdaftar:\n\n'
+                  '$email\n\n'
+                  'dan membuat PIN baru.',
           textAlign: TextAlign.center,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Tutup'),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.expense,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _resetPin();
+            },
+            child: const Text('Reset PIN'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _resetPin() async {
+    setState(() => _loading = true);
+    try {
+      await ref.read(authControllerProvider).signOut();
+    } catch (_) {
+      // Proceed with a local reset even if the remote session cannot sign out.
+    }
+    await ref.read(lockControllerProvider).logout();
+    if (!mounted) return;
+    context.go('/login');
   }
 
   void _onDelete() {

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/data/supabase_client.dart';
 import '../../core/security/pin_service.dart';
 import '../../core/security/secure_store.dart';
 import '../../core/theme/app_colors.dart';
@@ -15,11 +17,16 @@ import '../../providers/theme_provider.dart';
 import '../../providers/update_provider.dart';
 import '../../widgets/settings_section.dart';
 
-class ProfilePage extends ConsumerWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends ConsumerState<ProfilePage> {
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final metadata = user?.userMetadata ?? const <String, dynamic>{};
     final rawName = metadata['display_name'] as String?;
@@ -42,12 +49,15 @@ class ProfilePage extends ConsumerWidget {
             name: name,
             email: email,
             verified: verified,
+            onEdit: () => _editProfile(context),
           ),
           SettingsSection(title: 'AKUN', children: [
             _item(context, Icons.person_outline, 'Informasi Pribadi',
-                'Kelola nama dan identitas akun', null),
+                'Kelola nama dan identitas akun', null,
+                onTap: () => _editProfile(context)),
             _item(context, Icons.mail_outline, 'Email',
-                email ?? 'Belum tersedia', null),
+                email ?? 'Belum tersedia', null,
+                onTap: () => _emailAction(context, ref)),
             if (phone != null && phone.isNotEmpty)
               _item(
                   context, Icons.phone_outlined, 'Nomor Telepon', phone, null),
@@ -85,7 +95,7 @@ class ProfilePage extends ConsumerWidget {
                 'Perangkat',
                 devices.when(
                     data: (v) => '${v.length} perangkat',
-                    loading: () => 'MemuatÃ¢â‚¬Â¦',
+                    loading: () => 'Memuat…',
                     error: (_, __) => 'Tidak tersedia'),
                 '/devices'),
             _item(context, Icons.history_outlined, 'Aktivitas Keamanan',
@@ -165,7 +175,7 @@ class ProfilePage extends ConsumerWidget {
         icon,
         title,
         snapshot.connectionState == ConnectionState.waiting
-            ? 'MemuatÃ¢â‚¬Â¦'
+            ? 'Memuat…'
             : snapshot.data == true
                 ? yes
                 : no,
@@ -180,6 +190,122 @@ class ProfilePage extends ConsumerWidget {
         _ => 'Mengikuti Sistem',
       };
 
+  Future<void> _emailAction(BuildContext context, WidgetRef ref) async {
+    final user = ref.read(currentUserProvider);
+    if (user?.emailConfirmedAt != null) {
+      _showInfo(context, 'Email terverifikasi',
+          'Email akun ini sudah terverifikasi.');
+      return;
+    }
+    final email = user?.email;
+    if (email == null || email.isEmpty) return;
+    try {
+      await SupabaseConfig.client.auth
+          .resend(type: OtpType.signup, email: email);
+      if (context.mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Email verifikasi dikirim ulang.')));
+    } catch (_) {
+      if (context.mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gagal mengirim ulang verifikasi.')));
+    }
+  }
+
+  Future<void> _editProfile(BuildContext context) async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+    final name = TextEditingController(
+        text: user.userMetadata?['display_name'] as String? ?? '');
+    final phone = TextEditingController(text: user.phone ?? '');
+    final email = TextEditingController(text: user.email ?? '');
+    final saved = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+              title: const Text('Informasi Pribadi'),
+              content: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(
+                    controller: name,
+                    textCapitalization: TextCapitalization.words,
+                    decoration:
+                        const InputDecoration(labelText: 'Nama Lengkap')),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: phone,
+                    keyboardType: TextInputType.phone,
+                    decoration:
+                        const InputDecoration(labelText: 'Nomor Telepon')),
+                const SizedBox(height: 12),
+                TextField(
+                    enabled: false,
+                    controller: email,
+                    decoration: const InputDecoration(
+                        labelText: 'Email (dikelola Supabase)')),
+                if (user.emailConfirmedAt == null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Email belum terverifikasi. Verifikasi diperlukan untuk '
+                    'reset PIN dan pemulihan akun.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: AppColors.neutral),
+                  ),
+                ],
+              ]),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Batal')),
+                FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Simpan'))
+              ],
+            ));
+    if (saved != true) {
+      name.dispose();
+      phone.dispose();
+      email.dispose();
+      return;
+    }
+    try {
+      await SupabaseConfig.client.auth.updateUser(UserAttributes(
+          data: {'display_name': name.text.trim()},
+          phone: phone.text.trim().isEmpty ? null : phone.text.trim()));
+      try {
+        await SupabaseConfig.client.from('profiles').update({
+          'display_name': name.text.trim(),
+          'updated_at': DateTime.now().toUtc().toIso8601String()
+        }).eq('id', user.id);
+      } catch (_) {
+        // The auth metadata is authoritative; the profile row may not exist.
+      }
+      ref.invalidate(currentUserProvider);
+      if (context.mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profil berhasil diperbarui.')));
+    } catch (_) {
+      if (context.mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profil belum berhasil disimpan.')));
+    } finally {
+      name.dispose();
+      phone.dispose();
+      email.dispose();
+    }
+  }
+
+  void _showInfo(BuildContext context, String title, String body) =>
+      showDialog<void>(
+          context: context,
+          builder: (_) => AlertDialog(
+                  title: Text(title),
+                  content: Text(body),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Tutup'))
+                  ]));
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -257,10 +383,14 @@ class ProfilePage extends ConsumerWidget {
 
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard(
-      {required this.name, required this.email, required this.verified});
+      {required this.name,
+      required this.email,
+      required this.verified,
+      this.onEdit});
   final String name;
   final String? email;
   final bool verified;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -328,6 +458,15 @@ class _ProfileCard extends StatelessWidget {
           const SizedBox(width: 8),
           Image.asset('assets/brand/logo.png',
               width: 46, height: 28, fit: BoxFit.contain),
+          if (onEdit != null) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              onPressed: onEdit,
+              tooltip: 'Ubah profil',
+              color: Colors.white,
+              icon: const Icon(Icons.edit_outlined, size: 18),
+            ),
+          ],
         ],
       ),
     );
