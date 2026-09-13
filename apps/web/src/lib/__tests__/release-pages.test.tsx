@@ -20,7 +20,7 @@ describe("release pages", () => {
     expect(screen.getByText("50 MB")).toBeInTheDocument();
     expect(screen.getAllByText("9 September 2026").length).toBeGreaterThan(0);
     expect(screen.getByRole("img", {name: "Logo resmi NUSARTA"})).toHaveAttribute("src", expect.stringContaining("nusarta02.png"));
-    expect(screen.getByRole("link", {name: "Download NUSARTA APK"})).toHaveAttribute("href", releases[0].apkUrl);
+    expect(screen.getByRole("link", {name: "Download APK"})).toHaveAttribute("href", releases[0].apkUrl);
     const history = screen.getByRole("region", {name: "Versi Lainnya"});
     expect(within(history).getByRole("link", {name: "Download APK v1.0.2"})).toHaveAttribute("href", releases[1].apkUrl);
     expect(within(history).queryByText("NUSARTA v1.0.3")).not.toBeInTheDocument();

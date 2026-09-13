@@ -35,10 +35,12 @@ export default async function DownloadPage() {
     getGithubTestRelease(),
   ]);
   const [latestRelease, ...previousReleases] = releases;
-  const downloadUrl = latestRelease?.apkUrl;
+  const androidRelease = latestRelease ?? testRelease;
+  const downloadUrl = androidRelease?.apkUrl;
+  const androidFileName = testRelease && !latestRelease ? testRelease.apkName : "NUSARTA.apk";
   const playsstore = playStoreUrl();
   const downloadAvailable = Boolean(downloadUrl);
-  const displayedVersion = latestRelease ? `Versi ${latestRelease.version}` : "Download belum tersedia";
+  const displayedVersion = androidRelease ? `Versi ${androidRelease.version}` : "Download belum tersedia";
 
   return (
     <>
@@ -78,11 +80,11 @@ export default async function DownloadPage() {
                   </div>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-nusa-primary/10 px-3 py-1.5 text-xs font-semibold text-brand">
                     <span className="h-1.5 w-1.5 rounded-full bg-nusa-primary" />
-                    {latestRelease ? "Versi terkini" : "Belum tersedia"}
+                    {latestRelease ? "Versi terkini" : testRelease ? "Testing" : "Belum tersedia"}
                   </span>
                 </div>
 
-                <p className="mt-4 text-sm text-muted-foreground">Nama file: <span className="font-medium text-foreground">NUSARTA.apk</span></p>
+                <p className="mt-4 text-sm text-muted-foreground">Nama file: <span className="font-medium text-foreground">{androidFileName}</span></p>
                 <p className="mt-1 text-sm text-muted-foreground">Platform: Android <span aria-hidden="true">&middot;</span> Format: APK</p>
                 <dl className="mt-8 grid grid-cols-1 gap-x-6 gap-y-5 text-sm sm:grid-cols-2">
                   <div className="flex items-center gap-2.5">
@@ -92,7 +94,7 @@ export default async function DownloadPage() {
                         Rilis
                       </dt>
                       <dd className="font-medium text-foreground">
-                        {latestRelease ? releaseDate(latestRelease.publishedAt) : "-"}
+                        {androidRelease ? releaseDate(androidRelease.publishedAt) : "-"}
                       </dd>
                     </div>
                   </div>
@@ -114,7 +116,7 @@ export default async function DownloadPage() {
                         Ukuran berkas
                       </dt>
                       <dd className="font-medium text-foreground">
-                        {latestRelease ? apkSize(latestRelease.apkSize) : "-"}
+                        {androidRelease ? apkSize(androidRelease.apkSize) : "-"}
                       </dd>
                     </div>
                   </div>
@@ -125,11 +127,11 @@ export default async function DownloadPage() {
                   {downloadAvailable ? (
                     <a
                       href={downloadUrl ?? undefined}
-                      download="NUSARTA.apk"
+                      download={androidFileName}
                       className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-nusa-gold px-5 py-3 text-sm font-semibold text-nusa-deepest shadow-lg shadow-nusa-primary/20 transition-colors hover:bg-nusa-goldlight focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand sm:text-base"
                     >
                       <Download aria-hidden="true" className="h-5 w-5" />
-                      Download NUSARTA APK
+                      Download APK
                     </a>
                   ) : (
                     <span className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-nusa-primary/15 px-8 py-4 font-semibold text-brand">
@@ -151,12 +153,12 @@ export default async function DownloadPage() {
                   Lihat riwayat versi
                 </Link>
 
-                {latestRelease ? <ReleaseChecksum release={latestRelease} /> : (
+                {latestRelease ? <ReleaseChecksum release={latestRelease} /> : !testRelease ? (
                   <p role="status" className="mt-5 text-sm text-muted-foreground">
                     {status === "unavailable" ? "Data rilis belum dapat diperbarui. Silakan coba lagi nanti." : "Belum ada rilis stabil dengan APK yang tersedia."}{" "}
                     <a href={RELEASES_URL} className="font-semibold text-brand underline">Lihat GitHub Releases</a>
                   </p>
-                )}
+                ) : null}`r
               </div>
               <section aria-labelledby="install-heading" className="mt-6 rounded-2xl border border-border bg-card p-5 sm:p-8">
                 <h2 id="install-heading" className="text-lg font-semibold text-foreground">Cara Instal</h2>
