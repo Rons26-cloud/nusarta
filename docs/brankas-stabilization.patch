@@ -1,0 +1,365 @@
+diff --git a/supabase/functions/brankas-disburse/index.ts b/supabase/functions/brankas-disburse/index.ts
+index 089c1ab..cd5c4fa 100644
+--- a/supabase/functions/brankas-disburse/index.ts
++++ b/supabase/functions/brankas-disburse/index.ts
+@@ -1,5 +1,5 @@
+ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+-import { BrankasProviderError, createSandboxDisbursement, merchantTxnIdForTransferId, retrieveSandboxDisbursement } from "../_shared/brankas_disburse.ts";
++import { BrankasProviderError, createSandboxDisbursement, merchantTxnIdForTransferId, submissionsFrozen, validateDestination, failurePersistence } from "../_shared/brankas_disburse.ts";
+ 
+ const headers = { "content-type": "application/json; charset=utf-8" };
+ const json = (body: Record<string, unknown>, status: number) => new Response(JSON.stringify(body), { status, headers });
+@@ -16,6 +16,7 @@ function dbClient() {
+ }
+ Deno.serve(async (request: Request): Promise<Response> => {
+   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
++  if (submissionsFrozen()) return json({ error: "brankas_submissions_frozen", safe_to_retry: false }, 503);
+   if (!(request.headers.get("content-type")?.toLowerCase() ?? "").includes("application/json")) return json({ error: "content_type_must_be_application_json" }, 415);
+   const authorization = request.headers.get("authorization");
+   if (!authorization?.toLowerCase().startsWith("bearer ")) return json({ error: "authentication_required" }, 401);
+@@ -28,6 +29,10 @@ Deno.serve(async (request: Request): Promise<Response> => {
+   const destinationBank = text(body.destination_bank, 80);
+   const destinationNumber = text(body.destination_number, 80);
+   const currency = text(body.currency, 3);
++  const destinationHolderName = text(body.destination_holder_name);
++  const destinationAccountType = text(body.destination_account_type);
++  const destinationAddress = body.destination_address;
++  try { validateDestination(destinationBank, destinationNumber, destinationHolderName, destinationAccountType, destinationAddress); } catch (error) { return json({ error: error instanceof BrankasProviderError ? error.code : "official_destination_required" }, 400); }
+   const amount = body.amount_minor;
+   if (!sourceAccountId || !destinationBank || !destinationNumber || currency !== "IDR" || typeof amount !== "string" || !/^\d+$/.test(amount) || BigInt(amount) <= 0n) return json({ error: "invalid_disbursement_input" }, 400);
+ 
+@@ -42,16 +47,16 @@ Deno.serve(async (request: Request): Promise<Response> => {
+   if (existing) return json({ internal_transfer_id: existing.id, status: existing.status, provider_reference: existing.provider_reference }, 200);
+   const { data: created, error: createError } = await db.from("future_transfers").insert({ user_id: userData.user.id, source_financial_account_id: sourceAccountId, destination_type: "bank", amount: Number(amount) / 100, fee_amount: 0, total_amount: Number(amount) / 100, currency, provider: "brankas_disburse_sandbox", status: "draft", idempotency_key: idempotencyKey }).select("id").single();
+   if (createError || !created) return json({ error: "transfer_record_unavailable" }, 503);
+-  const merchantTxnId = merchantTxnIdForTransferId(created.id);
++  const merchantTxnId = merchantTxnIdForTransferId(created.id, "NOT_SUBMITTED");
+   try {
+-    const result = await createSandboxDisbursement({ sourceAccountId: providerSourceAccountId, destinationBank, destinationNumber, destinationAddress: { line1: "NUSARTA Sandbox Test Address", line2: "NUSARTA Sandbox", city: "Jakarta", province: "DKI Jakarta", zip_code: "10110", country: "ID" }, amountMinor: String(Number(amount) / 100), currency, merchantTxnId, remark: text(body.remark, 140) ?? undefined });
++    const result = await createSandboxDisbursement({ sourceAccountId: providerSourceAccountId, destinationBank, destinationNumber, destinationAddress: destinationAddress as import("../_shared/brankas_disburse.ts").DestinationAddress, destinationHolderName: destinationHolderName!, destinationAccountType: destinationAccountType!, amountMinor: String(Number(amount) / 100), currency, merchantTxnId, remark: text(body.remark, 140) ?? undefined });
+     const dbStatus = result.status === "succeeded" ? "success" : result.status === "failed" ? "failed" : "pending";
+     await db.from("future_transfers").update({ status: dbStatus, provider_reference: result.providerReferenceId ?? result.providerDisbursementId }).eq("id", created.id);
+     return json({ internal_transfer_id: created.id, ...result }, 202);
+   } catch (error) {
+     const providerError = error instanceof BrankasProviderError ? error : new BrankasProviderError("provider_request_failed", 502);
+-    const failureStatus = providerError.code === "provider_network_error" ? "pending" : "failed";
+-    await db.from("future_transfers").update({ status: failureStatus, failure_code: providerError.code, failure_message: providerError.details ?? null }).eq("id", created.id);
++    const failure = failurePersistence(providerError);
++    await db.from("future_transfers").update(failure).eq("id", created.id);
+     return json({ error: providerError.code, provider_error: providerError.details ?? null, internal_transfer_id: created.id }, providerError.httpStatus);
+   }
+ });
+diff --git a/supabase/functions/_shared/brankas_disburse.ts b/supabase/functions/_shared/brankas_disburse.ts
+index 0bb9fc1..72a7e1e 100644
+--- a/supabase/functions/_shared/brankas_disburse.ts
++++ b/supabase/functions/_shared/brankas_disburse.ts
+@@ -14,6 +14,8 @@ export interface DisbursementInput {
+   currency: string;
+   merchantTxnId: string;
+   destinationAddress: DestinationAddress;
++  destinationHolderName: string;
++  destinationAccountType: string;
+   remark?: string;
+ }
+ 
+@@ -41,6 +43,7 @@ export class BrankasProviderError extends Error {
+     public readonly code: string,
+     public readonly httpStatus: number,
+     public readonly details?: string,
++    public readonly providerPostState: ProviderPostState = "UNKNOWN",
+   ) {
+     super(code);
+   }
+@@ -49,19 +52,75 @@ export class BrankasProviderError extends Error {
+ const sandboxBaseUrl = "https://disburse.sandbox.bnk.to";
+ const timeoutMs = 15_000;
+ 
+-export function merchantTxnIdForTransferId(transferId: string): string {
+-  const compactId = transferId.replaceAll("-", "");
+-  const merchantTxnId = `ns-${compactId}`;
+-  if (merchantTxnId.length > 40) throw new BrankasProviderError("merchant_txn_id_invalid", 400);
+-  return merchantTxnId;
++export type ProviderPostState = "NOT_SUBMITTED" | "SUBMITTED" | "PROVIDER_REJECTED" | "UNKNOWN";
++
++// Deliberate hard stop; no environment/client flag may enable sending.
++export function submissionsFrozen(): boolean { return true; }
++
++export function merchantTxnIdForTransferId(transferId: string, state: ProviderPostState): string {
++  if (state !== "NOT_SUBMITTED") throw new BrankasProviderError("historical_merchant_id_required", 409);
++  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(transferId)) {
++    throw new BrankasProviderError("internal_transfer_id_invalid", 400);
++  }
++  return 'nusa-' + transferId.replaceAll('-', '').toLowerCase();
++}
++
++export function validateDestination(bank: unknown, number: unknown, holder: unknown, type: unknown, address: unknown): void {
++  const realText = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0 && value.length <= 200 && !/dummy|placeholder|sandbox test|example|address line|city name|province name|country name|unknown|[*•]/i.test(value);
++  if (!realText(bank) || !realText(number) || number === '1234000012340000' || !realText(holder)) {
++    throw new BrankasProviderError('official_destination_required', 400, undefined, 'NOT_SUBMITTED');
++  }
++  if (!['PERSONAL', 'CORPORATE', 'GOVERNMENT'].includes(String(type))) {
++    throw new BrankasProviderError('destination_account_type_invalid', 400, undefined, 'NOT_SUBMITTED');
++  }
++  if (!address || typeof address !== 'object' || Array.isArray(address)) {
++    throw new BrankasProviderError('destination_address_required', 400, undefined, 'NOT_SUBMITTED');
++  }
++  const fields = address as Record<string, unknown>;
++  // Conservative local completeness gate; provider docs do not mark per-field optionality.
++  for (const key of ['line1', 'city', 'province', 'zip_code', 'country']) {
++    if (!realText(fields[key])) throw new BrankasProviderError('destination_address_invalid', 400, undefined, 'NOT_SUBMITTED');
++  }
++  if (fields.line2 !== undefined && fields.line2 !== '' && !realText(fields.line2)) {
++    throw new BrankasProviderError('destination_address_invalid', 400, undefined, 'NOT_SUBMITTED');
++  }
++  if (!/^[A-Z]{2}$/.test(String(fields.country))) throw new BrankasProviderError('destination_country_invalid', 400, undefined, 'NOT_SUBMITTED');
+ }
+ 
+ function validateDisbursementInput(input: DisbursementInput): void {
+-  if (!input.sourceAccountId.trim() || !input.destinationBank.trim() || !input.destinationNumber.trim()) throw new BrankasProviderError("invalid_disbursement_input", 400);
+-  if (input.currency !== "IDR" || !/^\d+$/.test(input.amountMinor) || BigInt(input.amountMinor) <= 0n) throw new BrankasProviderError("invalid_disbursement_input", 400);
+-  if (input.merchantTxnId.length < 1 || input.merchantTxnId.length > 40) throw new BrankasProviderError("merchant_txn_id_invalid", 400);
+-  if (Object.values(input.destinationAddress).some((value) => typeof value !== "string" || value.trim().length === 0)) throw new BrankasProviderError("destination_address_invalid", 400);
++  validateDestination(input.destinationBank, input.destinationNumber, input.destinationHolderName, input.destinationAccountType, input.destinationAddress);
++  if (!input.sourceAccountId.trim() || input.currency !== 'IDR' || !/^\d+$/.test(input.amountMinor) || BigInt(input.amountMinor) <= 0n) {
++    throw new BrankasProviderError('invalid_disbursement_input', 400, undefined, 'NOT_SUBMITTED');
++  }
++  if (!/^nusa-[0-9a-f]{32}$/.test(input.merchantTxnId)) throw new BrankasProviderError('merchant_txn_id_invalid', 400, undefined, 'NOT_SUBMITTED');
+ }
++
++export function safeHttpFailure(status: number, body: unknown): BrankasProviderError {
++  // Only approved diagnostic categories survive; never echo provider payloads or credentials.
++  const raw = typeof body === 'object' && body !== null ? JSON.stringify(body) : '';
++  const hasReference = /"(?:provider_reference|reference_id|disbursement_id)"\s*:\s*"[^"\s]+"/.test(raw);
++  const rejected = [400, 401, 403, 404, 405, 413, 415, 422].includes(status) && !hasReference;
++  const issues = [];
++  if (/address/i.test(raw)) issues.push('Destination address rejected.');
++  if (/merchant_txn_id/i.test(raw)) issues.push('Merchant transaction identifier rejected.');
++  const details = [rejected ? 'Provider rejected the request.' : 'Provider acceptance is unconfirmed.', ...issues].join(' ');
++  return new BrankasProviderError('provider_http_' + status, 502, details, rejected ? 'PROVIDER_REJECTED' : 'UNKNOWN');
++}
++
++export async function parseProviderResponse(response: Response, merchantTxnId: string): Promise<DisbursementResult> {
++  let body: unknown;
++  try { body = await response.json(); } catch (_) {
++    if (!response.ok) throw safeHttpFailure(response.status, undefined);
++    throw new BrankasProviderError('provider_invalid_json', 502);
++  }
++  if (!response.ok) throw safeHttpFailure(response.status, body);
++  return parseResponse(body, merchantTxnId);
++}
++
++export function failurePersistence(error: BrankasProviderError) {
++  return {status: error.providerPostState === 'PROVIDER_REJECTED' ? 'failed' : 'pending', failure_code: error.code, failure_message: error.details ?? 'Provider acceptance is unconfirmed; do not retry.'};
++}
++
+ function assertSandboxConfig(): void {
+   const configuredEnv = Deno.env.get("BRANKAS_ENV")?.trim().toLowerCase();
+   if (configuredEnv !== "sandbox") throw new BrankasProviderError("sandbox_only", 503);
+@@ -93,29 +152,6 @@ function mapStatus(status: unknown): NusartaTransferStatus {
+   }
+ }
+ 
+-function safeProviderError(body: unknown): string | undefined {
+-  if (body === null || typeof body !== "object") return undefined;
+-  const value = body as Record<string, unknown>;
+-  const candidates = [value.error, value.errors, value.message, value.code];
+-  const parts: string[] = [];
+-  const collect = (item: unknown): void => {
+-    if (typeof item === "string" && item.trim().length > 0 && item.length <= 160) {
+-      parts.push(item.trim());
+-      return;
+-    }
+-    if (item !== null && typeof item === "object") {
+-      const object = item as Record<string, unknown>;
+-      for (const key of ["error_code", "code", "message", "field", "reason"]) {
+-        const text = object[key];
+-        if (typeof text === "string" && text.trim().length > 0 && text.length <= 160) {
+-          parts.push(`${key}:${text.trim()}`);
+-        }
+-      }
+-    }
+-  };
+-  candidates.forEach(collect);
+-  return parts.length > 0 ? parts.slice(0, 4).join(" | ") : undefined;
+-}
+ function readFeeMinor(disbursement: Record<string, unknown>): string | undefined {
+   const fees = disbursement.fees;
+   if (!Array.isArray(fees)) return undefined;
+@@ -163,6 +199,7 @@ function parseResponse(body: unknown, merchantTxnId: string): DisbursementResult
+ export async function createSandboxDisbursement(
+   input: DisbursementInput,
+ ): Promise<DisbursementResult> {
++  if (submissionsFrozen()) throw new BrankasProviderError('brankas_submissions_frozen', 503, 'State verification and official destination are required.', 'NOT_SUBMITTED');
+   validateDisbursementInput(input);
+   const apiKey = Deno.env.get("BRANKAS_API_KEY")?.trim();  if (!apiKey) throw new BrankasProviderError("provider_not_configured", 503);
+   assertSandboxConfig();
+@@ -185,22 +222,15 @@ export async function createSandboxDisbursement(
+           destination_account: {
+             bank: input.destinationBank,
+             number: input.destinationNumber,
+-            holder_name: "Dummy Recipient Name",
+-            type: "PERSONAL",
++            holder_name: input.destinationHolderName,
++            type: input.destinationAccountType,
+           },
+           destination_amount: { num: input.amountMinor, cur: input.currency },
+         }],
+       }),
+       signal: controller.signal,
+     });
+-    let body: unknown;
+-    try {
+-      body = await response.json();
+-    } catch (_) {
+-      throw new BrankasProviderError("provider_invalid_json", 502);
+-    }
+-    if (!response.ok) throw new BrankasProviderError(`provider_http_${response.status}`, 502, safeProviderError(body));
+-    return parseResponse(body, input.merchantTxnId);
++    return await parseProviderResponse(response, input.merchantTxnId);
+   } catch (error) {
+     if (error instanceof BrankasProviderError) throw error;
+     throw new BrankasProviderError("provider_network_error", 502);
+@@ -222,7 +252,7 @@ export async function retrieveSandboxDisbursement(merchantTxnId: string): Promis
+     });
+     let body: unknown;
+     try { body = await response.json(); } catch (_) { throw new BrankasProviderError("provider_invalid_json", 502); }
+-    if (!response.ok) throw new BrankasProviderError(`provider_http_${response.status}`, 502, safeProviderError(body));
++    if (!response.ok) throw safeHttpFailure(response.status, body);
+     if (body === null || typeof body !== "object") throw new BrankasProviderError("provider_invalid_response", 502);
+     const items = (body as Record<string, unknown>).disbursements;
+     if (!Array.isArray(items)) throw new BrankasProviderError("provider_missing_disbursements", 502);
+diff --git a/supabase/functions/brankas-reconcile/index.ts b/supabase/functions/brankas-reconcile/index.ts
+index e52caac..7928336 100644
+--- a/supabase/functions/brankas-reconcile/index.ts
++++ b/supabase/functions/brankas-reconcile/index.ts
+@@ -1,5 +1,5 @@
+ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+-import { BrankasProviderError, merchantTxnIdForTransferId, retrieveSandboxDisbursement } from "../_shared/brankas_disburse.ts";
++import { BrankasProviderError, retrieveSandboxDisbursement } from "../_shared/brankas_disburse.ts";
+ 
+ const headers = { "content-type": "application/json; charset=utf-8" };
+ const json = (body: Record<string, unknown>, status: number) => new Response(JSON.stringify(body), { status, headers });
+@@ -26,6 +26,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
+   if (payload === null || typeof payload !== "object" || Array.isArray(payload)) return json({ error: "json_object_required" }, 400);
+   const internalTransferId = text((payload as Record<string, unknown>).internal_transfer_id);
+   if (!internalTransferId) return json({ error: "internal_transfer_id_required" }, 400);
++  if (!['a81200b7-f9c4-4964-9b2a-ec5cc0a09a53', 'fd6ab443-5d7d-4bf9-9883-5f8f804ce233'].includes(internalTransferId)) return json({ error: 'transfer_outside_review_scope' }, 409);
+ 
+   const auth = await authClient().auth.getUser(authorization.slice(7));
+   if (auth.error || !auth.data.user) return json({ error: "authentication_required" }, 401);
+@@ -35,15 +36,18 @@ Deno.serve(async (request: Request): Promise<Response> => {
+   if (transfer.provider !== "brankas_disburse_sandbox") return json({ error: "unsupported_provider" }, 409);
+   if (transfer.provider_reference && ["success", "succeeded", "failed", "cancelled"].includes(String(transfer.status))) return json({ internal_transfer_id: transfer.id, status: transfer.status, provider_reference: transfer.provider_reference, reconciled: false }, 200);
+ 
+-  const merchantTxnId = merchantTxnIdForTransferId(transfer.id);
++  if (!transfer.provider_reference) return json({ internal_transfer_id: transfer.id, status: transfer.status, reconciled: false, error: 'provider_reference_unverified' }, 409);
++  // Both reviewed IDs predate the identifier change. Never recompute them with the new format.
++  const merchantTxnId = 'nusarta-' + transfer.id;
+   try {
+     const result = await retrieveSandboxDisbursement(merchantTxnId);
++    if (!result.rawStatusKnown || result.status === 'unknown') return json({ internal_transfer_id: transfer.id, status: transfer.status, reconciled: false, error: 'provider_state_unconfirmed' }, 409);
+     const status = result.status === "succeeded" ? "success" : result.status === "failed" ? "failed" : result.status === "cancelled" ? "cancelled" : result.status === "processing" ? "processing" : result.status === "pending" ? "pending" : "unknown";
+     const providerReference = result.providerReferenceId ?? result.providerDisbursementId ?? transfer.provider_reference;
+     await db.from("future_transfers").update({ status, provider_reference: providerReference }).eq("id", transfer.id).eq("user_id", auth.data.user.id);
+     return json({ internal_transfer_id: transfer.id, status, provider_reference: providerReference, provider_status: result.providerStatus ?? null, reconciled: true }, 200);
+   } catch (error) {
+     const code = error instanceof BrankasProviderError ? error.code : "provider_request_failed";
+-    return json({ internal_transfer_id: transfer.id, status: transfer.status === "pending" ? "pending" : "unknown", reconciled: false, error: code }, 502);
++    return json({ internal_transfer_id: transfer.id, status: transfer.status, reconciled: false, error: code }, 502);
+   }
+ });
+\ No newline at end of file
+diff --git a/apps/mobile/lib/features/profile/profile_page.dart b/apps/mobile/lib/features/profile/profile_page.dart
+index f16f628..88d89bb 100644
+--- a/apps/mobile/lib/features/profile/profile_page.dart
++++ b/apps/mobile/lib/features/profile/profile_page.dart
+@@ -335,85 +335,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
+                         onPressed: () => Navigator.pop(context),
+                         child: const Text('Tutup'))
+                   ]));
+-  Future<void> _runBrankasSandboxTest() async {
+-    if (!kDebugMode || !SupabaseConfig.isInitialized || _brankasTestSubmitted)
+-      return;
+-    final session = SupabaseConfig.client.auth.currentSession;
+-    final user = SupabaseConfig.client.auth.currentUser;
+-    if (session == null || user == null) {
+-      _showInfo(context, 'Brankas Sandbox Test', 'Sesi login tidak tersedia.');
+-      return;
+-    }
++  void _runBrankasSandboxTest() {
++    if (!kDebugMode || _brankasTestSubmitted) return;
+     _brankasTestSubmitted = true;
+-    var stage = 'AUTH_CHECK';
+-    final status = ValueNotifier<String>('SENDING');
+-    showDialog<void>(
+-      context: context,
+-      barrierDismissible: false,
+-      builder: (dialogContext) => ValueListenableBuilder<String>(
+-        valueListenable: status,
+-        builder: (_, value, __) => AlertDialog(
+-          title: const Text('Brankas Sandbox Test'),
+-          content: Text(value),
+-          actions: value == 'SENDING'
+-              ? const []
+-              : [
+-                  TextButton(
+-                      onPressed: () => Navigator.pop(dialogContext),
+-                      child: const Text('Tutup')),
+-                ],
+-        ),
+-      ),
+-    );
+-    try {
+-      stage = 'SOURCE_ACCOUNT_LOOKUP';
+-      final account = await SupabaseConfig.client
+-          .from('accounts')
+-          .select('id')
+-          .eq('user_id', user.id)
+-          .eq('is_archived', false)
+-          .limit(1)
+-          .maybeSingle();
+-      final accountId = account?['id'];
+-      if (accountId is! String)
+-        throw StateError('Akun sumber NUSARTA belum tersedia.');
+-      stage = 'DISBURSE_REQUEST';
+-      final response = await SupabaseConfig.client.functions
+-          .invoke('brankas-disburse', body: {
+-        'source_account_id': accountId,
+-        'destination_bank': 'DUMMY_DESTINATION_BANK',
+-        'destination_number': '1234000012340000',
+-        'amount_minor': '1000000',
+-        'currency': 'IDR',
+-        'remark': 'NUSARTA sandbox test',
+-      });
+-      if (response.data is Map && (response.data as Map)['error'] != null) {
+-        throw StateError(
+-            'PROVIDER_ERROR: ' + (response.data as Map)['error'].toString());
+-      }
+-      stage = 'RECONCILIATION';
+-      final data = response.data is Map
+-          ? Map<String, dynamic>.from(response.data as Map)
+-          : <String, dynamic>{};
+-      final internalId = data['internal_transfer_id'];
+-      if (internalId is! String)
+-        throw StateError('Internal transfer tidak dibuat.');
+-      final reconcile = await SupabaseConfig.client.functions.invoke(
+-          'brankas-reconcile',
+-          body: {'internal_transfer_id': internalId});
+-      final reconciled = reconcile.data is Map
+-          ? Map<String, dynamic>.from(reconcile.data as Map)
+-          : <String, dynamic>{};
+-      status.value = 'RECONCILED\nInternal: ' +
+-          internalId +
+-          '\nProvider: ' +
+-          (reconciled['provider_reference']?.toString() ?? '-') +
+-          '\nStatus: ' +
+-          (reconciled['status']?.toString() ?? 'UNKNOWN');
+-    } catch (error) {
+-      status.value =
+-          stage + '\n' + error.runtimeType.toString() + '\n' + error.toString();
+-    }
++    _showInfo(context, 'Brankas Sandbox Test',
++        'Pengiriman dinonaktifkan. Status dua transfer lama dan tujuan sandbox resmi harus diverifikasi sebelum pengujian berikutnya.');
+   }
+ 
+   Future<void> _logout(BuildContext context, WidgetRef ref) async {

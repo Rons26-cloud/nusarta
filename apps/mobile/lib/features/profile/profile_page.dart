@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config/app_config.dart';
 import '../../core/data/supabase_client.dart';
 import '../../core/security/pin_service.dart';
 import '../../core/security/secure_store.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/updates/update_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/finance_providers.dart';
 import '../../providers/lock_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../providers/update_provider.dart';
+import '../../widgets/profile_avatar.dart';
 import '../../widgets/settings_section.dart';
+import 'avatar_edit_sheet.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -25,6 +25,7 @@ class ProfilePage extends ConsumerStatefulWidget {
 }
 
 class _ProfilePageState extends ConsumerState<ProfilePage> {
+  bool _brankasTestSubmitted = false;
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
@@ -38,6 +39,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final verified = user?.emailConfirmedAt != null;
     final devices = ref.watch(devicesProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final avatarUrl = ref.watch(profileAvatarUrlProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundOff,
@@ -49,9 +51,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             name: name,
             email: email,
             verified: verified,
+            avatarUrl: avatarUrl,
             onEdit: () => _editProfile(context),
+            onPhotoTap: () => _openAvatarSheet(name, avatarUrl),
           ),
           SettingsSection(title: 'AKUN', children: [
+            _item(context, Icons.settings_outlined, 'Pengaturan',
+                'Keamanan, preferensi, privasi, dan bantuan', '/settings'),
             _item(context, Icons.person_outline, 'Informasi Pribadi',
                 'Kelola nama dan identitas akun', null,
                 onTap: () => _editProfile(context)),
@@ -89,6 +95,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 '/settings?section=biometric'),
             _item(context, Icons.lock_clock_outlined, 'Kunci Otomatis',
                 'Atur durasi penguncian', '/settings?section=auto-lock'),
+            _item(context, Icons.lock_reset_rounded, 'Lupa / Reset PIN',
+                'Reset PIN lewat verifikasi email', '/settings?section=pin'),
             _item(
                 context,
                 Icons.devices_outlined,
@@ -106,40 +114,45 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 _themeLabel(themeMode), '/settings?section=theme'),
             _item(context, Icons.currency_exchange_outlined, 'Mata Uang',
                 'Rupiah (IDR)', null),
+            _item(context, Icons.language_outlined, 'Bahasa',
+                'Bahasa Indonesia', null),
             _item(context, Icons.notifications_none_rounded, 'Notifikasi',
                 'Segera hadir', '/notifications'),
           ]),
-          SettingsSection(title: 'DATA & PRIVASI', children: [
-            _item(context, Icons.privacy_tip_outlined, 'Privasi & Keamanan',
-                'Pelajari perlindungan data NUSARTA', null),
-            _item(context, Icons.download_outlined, 'Kelola Data',
-                'Data pencatatan tetap milikmu', null),
+          SettingsSection(title: 'BANTUAN & INFORMASI', children: [
+            _item(context, Icons.school_outlined, 'Panduan NUSARTA',
+                'Tutorial interaktif penggunaan aplikasi', '/tutorial'),
+            _item(context, Icons.link_rounded, 'Panduan Menghubungkan Akun',
+                'Cara menyambungkan bank & e-wallet', '/tutorial/link-account'),
+            _item(context, Icons.help_outline_rounded, 'Pusat Bantuan',
+                'Jawaban untuk pertanyaan umum', '/help'),
+            _item(context, Icons.info_outline_rounded, 'Tentang NUSARTA',
+                'Keuanganmu, Dalam Kendalimu.', '/about'),
+            _item(context, Icons.policy_outlined, 'Kebijakan Privasi',
+                'Pelajari perlindungan data NUSARTA', '/privacy'),
+            _item(context, Icons.description_outlined, 'Syarat & Ketentuan',
+                'Aturan penggunaan layanan', '/terms'),
+            _item(context, Icons.system_update_outlined, 'Versi Aplikasi',
+                'Cek versi dan pembaruan', '/version'),
+          ]),
+          SettingsSection(title: 'LAINNYA', children: [
             _item(context, Icons.person_remove_outlined, 'Hapus Akun',
                 'Hapus akun dan data secara permanen', '/delete-account',
                 destructive: true),
           ]),
-          SettingsSection(title: 'BANTUAN & INFORMASI', children: [
-            _item(context, Icons.help_outline_rounded, 'Pusat Bantuan',
-                'Jawaban untuk pertanyaan umum', null,
-                onTap: () => _showHelp(context)),
-            _item(context, Icons.info_outline_rounded, 'Tentang NUSARTA',
-                'Keuanganmu, Dalam Kendalimu.', null,
-                onTap: () => _showAbout(context)),
-            _item(context, Icons.policy_outlined, 'Kebijakan Privasi',
-                'Segera hadir', null),
-            _item(context, Icons.description_outlined, 'Syarat & Ketentuan',
-                'Segera hadir', null),
-            _item(context, Icons.system_update_outlined, 'Versi Aplikasi',
-                'NUSARTA ${AppConfig.version}+${AppConfig.buildNumber}', null,
-                onTap: () => _checkUpdate(context, ref)),
-          ]),
           const SizedBox(height: 20),
+          if (kDebugMode)
+            SettingsSection(title: 'DEVELOPER', children: [
+              _item(context, Icons.science_outlined, 'Brankas Sandbox Test',
+                  'DEBUG ONLY', null,
+                  onTap: _runBrankasSandboxTest),
+            ]),
           FilledButton.tonalIcon(
             icon: const Icon(Icons.logout_rounded),
             label: const Text('Keluar dari Akun'),
             style: FilledButton.styleFrom(
               foregroundColor: AppColors.expense,
-              backgroundColor: AppColors.expense.withOpacity(.08),
+              backgroundColor: AppColors.expense.withValues(alpha: .08),
               minimumSize: const Size.fromHeight(50),
             ),
             onPressed: () => _logout(context, ref),
@@ -157,8 +170,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           color: destructive ? AppColors.expense : AppColors.primary),
       title: Text(title,
           style: destructive
-              ? const TextStyle(
-                  color: AppColors.expense, fontWeight: FontWeight.w700)
+              ? TextStyle(color: AppColors.expense, fontWeight: FontWeight.w700)
               : null),
       subtitle: Text(subtitle),
       trailing: route == null ? null : const Icon(Icons.chevron_right_rounded),
@@ -190,6 +202,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         _ => 'Mengikuti Sistem',
       };
 
+  Future<void> _openAvatarSheet(String name, String? avatarUrl) async {
+    final changed = await showAvatarEditSheet(context,
+        avatarUrl: avatarUrl, displayName: name);
+    if (changed == true && mounted) {
+      debugPrint('AVATAR_PROVIDER_REFRESH');
+      ref.invalidate(profileProvider);
+      await ref.read(profileProvider.future);
+      if (!mounted) return;
+      debugPrint('AVATAR_UI_REFRESH');
+    }
+  }
+
   Future<void> _emailAction(BuildContext context, WidgetRef ref) async {
     final user = ref.read(currentUserProvider);
     if (user?.emailConfirmedAt != null) {
@@ -202,13 +226,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     try {
       await SupabaseConfig.client.auth
           .resend(type: OtpType.signup, email: email);
-      if (context.mounted)
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Email verifikasi dikirim ulang.')));
+      }
     } catch (_) {
-      if (context.mounted)
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Gagal mengirim ulang verifikasi.')));
+      }
     }
   }
 
@@ -281,13 +307,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         // The auth metadata is authoritative; the profile row may not exist.
       }
       ref.invalidate(currentUserProvider);
-      if (context.mounted)
+      ref.invalidate(profileProvider);
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profil berhasil diperbarui.')));
+      }
     } catch (_) {
-      if (context.mounted)
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profil belum berhasil disimpan.')));
+      }
     } finally {
       name.dispose();
       phone.dispose();
@@ -306,6 +335,39 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         onPressed: () => Navigator.pop(context),
                         child: const Text('Tutup'))
                   ]));
+  Future<void> _runBrankasSandboxTest() async {
+    if (!kDebugMode || !SupabaseConfig.isInitialized || _brankasTestSubmitted) {
+      return;
+    }
+    if (SupabaseConfig.client.auth.currentSession == null) {
+      _showInfo(context, 'Brankas Sandbox Test', 'Sesi login tidak tersedia.');
+      return;
+    }
+    _brankasTestSubmitted = true;
+    try {
+      final response = await SupabaseConfig.client.functions
+          .invoke('brankas-preflight', body: <String, dynamic>{});
+      if (!mounted) return;
+      final data = response.data;
+      final active = data is Map && data['active_pending_transfer'] == true;
+      _showInfo(
+        context,
+        'Brankas Sandbox Test',
+        active
+            ? 'Masih ada transfer yang perlu direkonsiliasi. Transfer diblokir.'
+            : 'PREFLIGHT: Transfer diblokir sampai deployment, perlindungan '
+                'duplikasi, dan tujuan sandbox resmi terverifikasi.',
+      );
+    } catch (_) {
+      if (mounted) {
+        _showInfo(context, 'Brankas Sandbox Test',
+            'PREFLIGHT: Verifikasi backend tidak tersedia. Transfer diblokir.');
+      }
+    } finally {
+      _brankasTestSubmitted = false;
+    }
+  }
+
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -327,58 +389,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     await SecureStore.clear();
     if (context.mounted) context.go('/login');
   }
-
-  Future<void> _checkUpdate(BuildContext context, WidgetRef ref) async {
-    final state = await ref.read(updateControllerProvider).check(force: true);
-    if (!context.mounted) return;
-    if (state.status == UpdateStatus.updateAvailable && state.release != null) {
-      await showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Pembaruan Tersedia'),
-          content: Text(
-              'NUSARTA v${state.release!.version}\n\n${state.release!.releaseNotes}'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Nanti')),
-            FilledButton(
-              onPressed: () {
-                launchUrl(Uri.parse(state.release!.apkDownloadUrl),
-                    mode: LaunchMode.externalApplication);
-                Navigator.pop(context);
-              },
-              child: const Text('Update Sekarang'),
-            ),
-          ],
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(state.status == UpdateStatus.error
-            ? 'Tidak dapat memeriksa pembaruan. Coba lagi.'
-            : 'Anda menggunakan versi terbaru.'),
-      ));
-    }
-  }
-
-  void _showHelp(BuildContext context) => showDialog<void>(
-        context: context,
-        builder: (_) => const AlertDialog(
-          title: Text('Pusat Bantuan'),
-          content: Text(
-              'Lupa PIN? Keluar lalu masuk kembali untuk mengatur ulang keamanan perangkat.\n\nPencatatan NUSARTA bersifat manual dan tidak mengakses PIN bank.'),
-        ),
-      );
-
-  void _showAbout(BuildContext context) => showDialog<void>(
-        context: context,
-        builder: (_) => const AlertDialog(
-          title: Text('Tentang NUSARTA'),
-          content: Text(
-              'NUSARTA (Nusa + Arta) membantu kamu mengelola pencatatan keuangan pribadi dengan aman.\n\nKeuanganmu, Dalam Kendalimu.'),
-        ),
-      );
 }
 
 class _ProfileCard extends StatelessWidget {
@@ -386,16 +396,18 @@ class _ProfileCard extends StatelessWidget {
       {required this.name,
       required this.email,
       required this.verified,
-      this.onEdit});
+      this.avatarUrl,
+      this.onEdit,
+      this.onPhotoTap});
   final String name;
   final String? email;
   final bool verified;
+  final String? avatarUrl;
   final VoidCallback? onEdit;
+  final VoidCallback? onPhotoTap;
 
   @override
   Widget build(BuildContext context) {
-    final initial =
-        name.trim().isEmpty ? 'N' : name.trim().substring(0, 1).toUpperCase();
     final shownEmail = email == null || email!.isEmpty
         ? 'Email belum tersedia'
         : _maskEmail(email!);
@@ -413,14 +425,28 @@ class _ProfileCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-              radius: 30,
-              backgroundColor: AppColors.cream,
-              child: Text(initial,
-                  style: const TextStyle(
-                      color: AppColors.primaryDark,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800))),
+          Stack(children: [
+            ProfileAvatar(
+                name: name, url: avatarUrl, radius: 30, lightBackground: true),
+            if (onPhotoTap != null)
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: GestureDetector(
+                  onTap: onPhotoTap,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Icon(Icons.photo_camera_rounded,
+                        size: 13, color: AppColors.heading),
+                  ),
+                ),
+              ),
+          ]),
           const SizedBox(width: 14),
           Expanded(
               child: Column(

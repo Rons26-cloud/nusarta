@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/feature_flags.dart';
 import '../core/security/secure_store.dart';
 import '../data/models/account.dart';
+import '../data/models/account_connection.dart';
 import '../data/models/category.dart';
 import '../data/models/device.dart';
 import '../data/models/finance.dart';
@@ -10,6 +11,7 @@ import '../data/models/institution.dart';
 import '../data/models/notification.dart';
 import '../data/models/security_event.dart';
 import '../data/models/transaction.dart';
+import '../data/repositories/account_connection_repository.dart';
 import '../data/repositories/account_repository.dart';
 import '../data/repositories/category_repository.dart';
 import '../data/repositories/device_repository.dart';
@@ -210,6 +212,15 @@ final institutionsProvider = FutureProvider<List<Institution>>((ref) async {
   if (!FeatureFlags.isEnabled(FeatureFlag.institutionCatalog)) return const [];
   return InstitutionRepository.listActive();
 });
+
+/// The signed-in user's own account connections (RLS-scoped). Empty until an
+/// official provider integration is live.
+final accountConnectionsProvider = FutureProvider<List<AccountConnection>>(
+  (ref) {
+    ref.watch(currentUserProvider.select((user) => user?.id));
+    return AccountConnectionRepository.listMine();
+  },
+);
 
 final devicesProvider = FutureProvider<List<Device>>(
   (ref) {

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
+/// Builds the NUSARTA light theme. The app root syncs semantic colors to the
+/// active theme before building the tree; tests may call
+/// `AppColors.setBrightness(Brightness.light)` explicitly.
 ThemeData buildLightTheme() {
   final base = ThemeData.light(useMaterial3: true);
   return base.copyWith(
@@ -10,49 +13,62 @@ ThemeData buildLightTheme() {
       brightness: Brightness.light,
       primary: AppColors.primary,
       secondary: AppColors.accent,
-      surface: AppColors.background,
+      surface: AppColors.surfaceElevated,
       error: AppColors.expense,
     ),
     scaffoldBackgroundColor: AppColors.backgroundOff,
-    dividerColor: const Color(0xFFE2E8E6),
+    dividerColor: AppColors.divider,
+    splashFactory: InkRipple.splashFactory,
+    splashColor: AppColors.brandEmerald.withAlpha(18),
+    highlightColor: AppColors.primary.withAlpha(8),
     navigationBarTheme: NavigationBarThemeData(
       height: 72,
+      indicatorColor: Colors.transparent,
+      iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+          size: 24,
+          color: states.contains(WidgetState.selected)
+              ? AppColors.brandEmerald
+              : AppColors.iconSecondary)),
       labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
     ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: AppColors.background,
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: AppColors.surfaceElevated,
       showDragHandle: true,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
     ),
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: AppColors.background,
-      foregroundColor: Color(0xFF10231D),
+      foregroundColor: AppColors.textPrimary,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       centerTitle: false,
     ),
     cardTheme: base.cardTheme.copyWith(
       elevation: 0,
-      color: AppColors.background,
+      surfaceTintColor: Colors.transparent,
+      color: AppColors.surfaceElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.background,
+      fillColor: AppColors.inputFill,
+      hintStyle: TextStyle(color: AppColors.placeholder),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE2E8E6)),
+        borderSide: BorderSide(color: AppColors.inputBorder),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE2E8E6)),
+        borderSide: BorderSide(color: AppColors.inputBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        borderSide: BorderSide(color: AppColors.inputFocusedBorder, width: 1.5),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
@@ -66,6 +82,9 @@ ThemeData buildLightTheme() {
   );
 }
 
+/// Builds the NUSARTA dark theme. The app root syncs semantic colors to the
+/// active theme before building the tree; tests may call
+/// `AppColors.setBrightness(Brightness.dark)` explicitly.
 ThemeData buildDarkTheme() {
   final base = ThemeData.dark(useMaterial3: true);
   return base.copyWith(
@@ -74,48 +93,62 @@ ThemeData buildDarkTheme() {
       brightness: Brightness.dark,
       primary: AppColors.primaryLight,
       secondary: AppColors.accentLight,
-      surface: const Color(0xFF12211B),
+      surface: AppColors.surfaceElevated,
+      error: AppColors.expense,
     ),
-    scaffoldBackgroundColor: const Color(0xFF0E1914),
-    dividerColor: const Color(0xFF2E4A3C),
+    scaffoldBackgroundColor: AppColors.backgroundOff,
+    dividerColor: AppColors.divider,
+    splashFactory: InkRipple.splashFactory,
+    splashColor: AppColors.brandEmerald.withAlpha(26),
+    highlightColor: AppColors.primaryLight.withAlpha(14),
     navigationBarTheme: NavigationBarThemeData(
       height: 72,
+      indicatorColor: Colors.transparent,
+      iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+          size: 24,
+          color: states.contains(WidgetState.selected)
+              ? AppColors.brandEmerald
+              : AppColors.iconSecondary)),
       labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
     ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: Color(0xFF15231D),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: AppColors.surfaceElevated,
       showDragHandle: true,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
     ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Color(0xFF0E1914),
-      foregroundColor: Color(0xFFF5F2E9),
+    appBarTheme: AppBarTheme(
+      backgroundColor: AppColors.backgroundOff,
+      foregroundColor: AppColors.textPrimary,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       centerTitle: false,
     ),
     cardTheme: base.cardTheme.copyWith(
       elevation: 0,
-      color: const Color(0xFF15231D),
+      surfaceTintColor: Colors.transparent,
+      color: AppColors.surfaceElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color(0xFF15231D),
+      fillColor: AppColors.inputFill,
+      hintStyle: TextStyle(color: AppColors.placeholder),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF2E4A3C)),
+        borderSide: BorderSide(color: AppColors.inputBorder),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF2E4A3C)),
+        borderSide: BorderSide(color: AppColors.inputBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.accentLight, width: 1.5),
+        borderSide: BorderSide(color: AppColors.inputFocusedBorder, width: 1.5),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(

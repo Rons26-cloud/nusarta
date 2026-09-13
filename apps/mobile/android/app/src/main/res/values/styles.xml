@@ -24,4 +24,8 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
     </style>
+    <!-- The already-painted LaunchActivity stays visible while Flutter starts. -->
+    <style name="FlutterHandoffTheme" parent="NormalTheme">
+        <item name="android:windowDisablePreview">true</item>
+    </style>
 </resources>

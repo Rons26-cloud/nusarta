@@ -33,8 +33,9 @@ void main() {
     await tester.enterText(find.byType(TextField).first, '1');
     await tester.pump();
     expect(find.byType(TextField).at(1), findsOneWidget);
-    for (var i = 1; i < 6; i++)
+    for (var i = 1; i < 6; i++) {
       await tester.enterText(find.byType(TextField).at(i), '${i + 1}');
+    }
     await tester.pump();
     expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
         isNotNull);

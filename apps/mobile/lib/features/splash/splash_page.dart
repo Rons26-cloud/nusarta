@@ -6,10 +6,12 @@ import '../../core/data/supabase_client.dart';
 const splashBackground = Color(0xff063b2f);
 const splashSystemUi = SystemUiOverlayStyle(
   statusBarColor: Colors.transparent,
-  systemNavigationBarColor: splashBackground,
+  systemNavigationBarColor: Colors.transparent,
   statusBarIconBrightness: Brightness.light,
+  systemStatusBarContrastEnforced: false,
+  systemNavigationBarContrastEnforced: false,
   systemNavigationBarIconBrightness: Brightness.light,
-  systemNavigationBarDividerColor: splashBackground,
+  systemNavigationBarDividerColor: Colors.transparent,
 );
 
 class SplashPage extends StatefulWidget {
@@ -40,7 +42,6 @@ class _SplashPageState extends State<SplashPage> {
     precacheImage(const AssetImage('assets/brand/splash_screen.png'), context)
         .then((_) => _onArtworkFrame())
         .onError((_, __) => _onArtworkFrame());
-    Future<void>.delayed(const Duration(seconds: 2), _onArtworkFrame);
   }
 
   @override
@@ -49,12 +50,13 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   void _onArtworkFrame() {
-    if (!widget.autoContinue || _continueScheduled) return;
+    if (!mounted || !widget.autoContinue || _continueScheduled) return;
     _continueScheduled = true;
     // Decode and paint the artwork before starting its visible display time.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) _continue();
     });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   Future<void> _continue() async {
@@ -84,6 +86,7 @@ class _SplashPageState extends State<SplashPage> {
               // Cover preserves the artwork's aspect ratio while filling the
               // viewport, avoiding a small letterboxed image after launch.
               fit: BoxFit.cover,
+              alignment: Alignment.center,
               frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                 if (frame != null || wasSynchronouslyLoaded) _onArtworkFrame();
                 return child;

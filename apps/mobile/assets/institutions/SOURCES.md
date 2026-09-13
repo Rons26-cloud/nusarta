@@ -1,0 +1,16 @@
+# Institution logo sources
+
+Downloaded 2026-09-13 from each institution's official website or its linked CDN. Original bytes retained; no redrawing, recoloring, or SVG dependency. White OVO/AstraPay marks use a dark neutral backing. Logos indicate identity only, not connection or payment capability. Trademarks remain owned by the respective institutions. This provenance record does not assert a commercial license.
+
+- **bca**: [source page](https://www.bca.co.id/en/tentang-bca/media-riset/pressroom/Brand-Assets); [original asset](https://www.bca.co.id/-/media/Feature/Card/List-Card/Tentang-BCA/Brand-Assets/Logo-BCA/Logo-BCA_Biru.png); `bca.png`; SHA-256 `a786796ffe867676f9ab55edb29733cf497468b707ead91c98e8248197f6089b`.
+- **mandiri**: [source page](https://www.bankmandiri.co.id); [original asset](https://www.bankmandiri.co.id/image/layout_set_logo?img_id=31567); `mandiri.png`; SHA-256 `36849816bb2e5d28052541ce0ae636dd4cb145a6ecfdb70a2ba0a4e1abe81020`.
+- **gopay**: [source page](https://gopay.co.id/media-kit); [original asset](https://gopay.co.id/assets/img/logo/gopay.webp); `gopay.webp`; SHA-256 `0a6b3815dc52f711136bc3c7c6ae77d24830ab38b094e7043aa96dd9ac95994a`.
+- **ovo**: [source page](https://www.ovo.id); [original asset](https://www.ovo.id/ovo_front_res/img/ovo-logo-white.png); `ovo.png`; SHA-256 `19dea541b848dc4d71c7b4c90cf21eada48d3c3d5848385578a68f30979066a7`.
+- **seabank**: [source page](https://www.seabank.co.id); [original asset](https://banking-aka-storage.seabank.co.id/seabank/id/live/www/live/static/20260913/06_00_00_08nq8j/id/favicon-id.png); `seabank.png`; SHA-256 `a9cea50e2f4ac51c21766c916a7ce192b78b3f9605c0935e47b7e88ecb897fd0`.
+- **hsbc**: [source page](https://www.hsbc.co.id); [original asset](https://www.hsbc.co.id/etc.clientlibs/dpws/clientlibs-public/clientlib-site/resources/favicons/apple-touch-icon.png); `hsbc.png`; SHA-256 `d258f7e2ad662d73ec5c4a2c9e0b7d514b353df351bb8880b9b4731682788766`.
+- **maybank**: [source page](https://www.maybank.co.id); [original asset](https://www.maybank.co.id/assets/img/favicon.png?v=202603); `maybank.png`; SHA-256 `aee1b7fe7104c881e36c2597588160b86b2a0e6c7237d352f88aa3c7c32cbdce`.
+- **linkaja**: [source page](https://www.linkaja.id); [original asset](https://cdn.linkaja.com/website/asset/linkaja.png); `linkaja.png`; SHA-256 `a52b09c059fa01f00240b41e96737d2939a274a164d9941ab5b956811fbe1843`.
+- **doku**: [source page](https://www.doku.com); [original asset](https://cdn.prod.website-files.com/674ab654de930b217c6389c1/675f8b0ec71cb094460953e2_doku-favicon.png); `doku.png`; SHA-256 `6e3b75cbf8429e074f24ae94a4e79f1ab95225ef511342d6ee7a5b423770fbf0`.
+- **astrapay**: [source page](https://astrapay.com); [original asset](https://astrapay.com/static-assets/images/logos/logo-horizontal-new.png); `astrapay.png`; SHA-256 `ae89e30472eb6b094dfaba2a8d06e4625288b0609d6fdf60e01fcd1ce58a0e2b`.
+- **bca**: [source page](https://www.bca.co.id); [original asset](https://www.bca.co.id/-/media/Feature/Default-BCA/favicon-bca.png); `bca_mark.png`; SHA-256 `cb525281aaaeb0a1c0012c13cc60f34b7e53d2f82efd327abc9e7ca00dede83b`.
+- **gopay**: [source page](https://gopay.co.id/media-kit); [original asset](https://gopay.co.id/android-icon-192x192.png); `gopay_mark.png`; SHA-256 `06a46fa609fa867c32906b5516cac0c7aff96a01729ce94be0aa4d9508e4b1ad`.

@@ -26,7 +26,7 @@ class EmailVerificationSuccessPage extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Akun kamu sekarang aktif. Lanjutkan untuk membuat PIN keamanan.',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.neutral, height: 1.4),
@@ -60,10 +60,9 @@ class _TrustItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, size: 20, color: AppColors.primary),
+        Icon(icon, size: 20, color: AppColors.brandEmerald),
         const SizedBox(height: 4),
-        Text(label,
-            style: const TextStyle(fontSize: 12, color: AppColors.neutral)),
+        Text(label, style: TextStyle(fontSize: 12, color: AppColors.neutral)),
       ],
     );
   }

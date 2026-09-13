@@ -27,6 +27,7 @@ class _ShellScaffold extends StatefulWidget {
 
 class _ShellScaffoldState extends State<_ShellScaffold> {
   int _index = 0;
+  final _visited = <int>{0};
 
   static const _pages = [
     DashboardPage(),
@@ -44,25 +45,50 @@ class _ShellScaffoldState extends State<_ShellScaffold> {
     });
   }
 
+  void _onDestinationSelected(int index) {
+    if (_index == index) return;
+    setState(() {
+      _visited.add(index);
+      _index = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final systemUi = SystemUiOverlayStyle(
       statusBarColor: AppColors.deepEmerald,
       systemNavigationBarColor: Theme.of(context).colorScheme.surface,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarIconBrightness:
+          Theme.of(context).brightness == Brightness.dark
+              ? Brightness.light
+              : Brightness.dark,
       systemNavigationBarDividerColor: Colors.transparent,
     );
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: systemUi,
       child: Scaffold(
-        extendBody: true,
-        body: IndexedStack(index: _index, children: _pages),
+        extendBody: false,
+        body: IndexedStack(
+          index: _index,
+          children: [
+            // Lazy keep-alive: a tab is built only on its first visit, then
+            // kept alive so scroll position and state survive tab switches.
+            for (var i = 0; i < _pages.length; i++)
+              _visited.contains(i)
+                  ? TickerMode(
+                      enabled: i == _index,
+                      child: RepaintBoundary(child: _pages[i]))
+                  : const SizedBox.shrink(),
+          ],
+        ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _index,
-          onDestinationSelected: (i) => setState(() => _index = i),
+          onDestinationSelected: _onDestinationSelected,
           backgroundColor: Theme.of(context).colorScheme.surface,
-          indicatorColor: Theme.of(context).colorScheme.secondaryContainer,
+          indicatorColor: Colors.transparent,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
+          animationDuration: const Duration(milliseconds: 160),
           destinations: const [
             NavigationDestination(
                 icon: Icon(Icons.home_outlined),

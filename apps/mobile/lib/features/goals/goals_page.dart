@@ -63,7 +63,7 @@ class GoalsPage extends ConsumerWidget {
                             Text(
                               '${_format(g.current)} dari ${_format(g.target)}'
                               ' (${(g.progress * 100).toStringAsFixed(0)}%)',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: AppColors.neutral, fontSize: 12),
                             ),
                           ],
@@ -73,7 +73,7 @@ class GoalsPage extends ConsumerWidget {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.edit_outlined),
-                            color: AppColors.primary,
+                            color: AppColors.brandEmerald,
                             tooltip: 'Ubah tujuan',
                             onPressed: () => showModalBottomSheet(
                               context: context,

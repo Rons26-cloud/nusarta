@@ -57,14 +57,7 @@ class LockController {
     return true;
   }
 
-  Future<bool> enableBiometric() async {
-    final supported = await BiometricService.isSupported();
-    if (!supported) return false;
-    final available = await BiometricService.canAuthenticate();
-    if (!available) return false;
-    await BiometricService.setEnabled(true);
-    return true;
-  }
+  Future<bool> enableBiometric() => BiometricService.enable();
 
   Future<bool> disableBiometric() async {
     await BiometricService.setEnabled(false);

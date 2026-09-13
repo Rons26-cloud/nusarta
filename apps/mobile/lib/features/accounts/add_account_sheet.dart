@@ -7,6 +7,7 @@ import '../../core/utils/labels.dart';
 import '../../data/models/account.dart';
 import '../../data/models/institution.dart';
 import '../../providers/finance_providers.dart';
+import '../../widgets/institution_logo.dart';
 
 enum _ManualSource { cash, custom }
 
@@ -159,8 +160,16 @@ class _AddAccountSheetState extends ConsumerState<AddAccountSheet> {
                   for (final inst in institutions)
                     DropdownMenuItem(
                       value: inst,
-                      child: Text(
-                          '${inst.name} — ${institutionTypeLabel(inst.institutionType)}'),
+                      child: Row(children: [
+                        InstitutionLogo(
+                            code: inst.code, name: inst.name, size: 32),
+                        const SizedBox(width: 10),
+                        Expanded(
+                            child: Text(
+                                '${inst.name} — ${institutionTypeLabel(inst.institutionType)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis)),
+                      ]),
                     ),
                 ],
                 onChanged: _onSelected,

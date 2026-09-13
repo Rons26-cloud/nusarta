@@ -39,7 +39,8 @@ class NusartaEntryScaffold extends StatelessWidget {
         resizeToAvoidBottomInset: true,
         body: SafeArea(
           child: ColoredBox(
-            color: AppColors.cream,
+            color:
+                AppColors.isDark ? AppColors.surfaceElevated : AppColors.cream,
             child: LayoutBuilder(
               builder: (context, constraints) => SingleChildScrollView(
                 keyboardDismissBehavior:
@@ -82,12 +83,12 @@ class NusartaEntryScaffold extends StatelessWidget {
                                             .textTheme
                                             .headlineSmall
                                             ?.copyWith(
-                                                color: AppColors.primaryDark,
+                                                color: AppColors.heading,
                                                 fontWeight: FontWeight.w800)),
                                     const SizedBox(height: 6),
                                     Text(subtitle,
                                         textAlign: TextAlign.center,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             color: AppColors.textSecondary)),
                                     const SizedBox(height: 22),
                                     child,

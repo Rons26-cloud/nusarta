@@ -1,4 +1,8 @@
-// Institution catalog: metadata only; provider support is tracked separately.
+/// Provider integration status is derived from `provider_support` metadata
+/// managed server-side; the client never claims a capability that a provider
+/// does not actually offer.
+enum InstitutionStatus { available, comingSoon, maintenance, unsupported }
+
 class Institution {
   final String id;
   final String code;
@@ -20,12 +24,33 @@ class Institution {
     this.providerSupport = const {},
   });
 
-  /// Whether an official provider integration is claimed for this institution.
+  bool get isBank => institutionType == 'bank';
+  bool get isEwallet => institutionType == 'ewallet';
+
+  String? get provider => providerSupport['provider'] as String?;
+  bool get linkSupported =>
+      (providerSupport['link_supported'] as bool?) ?? false;
+  bool get syncSupported =>
+      (providerSupport['sync_supported'] as bool?) ?? false;
+  bool get transferSupported =>
+      (providerSupport['transfer_supported'] as bool?) ?? false;
+
+  /// Whether an official provider integration is currently enabled.
   bool get hasProviderIntegration =>
       (providerSupport['integration_available'] as bool?) ?? false;
 
-  bool get isBank => institutionType == 'bank';
-  bool get isEwallet => institutionType == 'ewallet';
+  InstitutionStatus get status {
+    final raw =
+        (providerSupport['integration_status'] as String?) ?? 'coming_soon';
+    if (hasProviderIntegration || raw == 'available') {
+      return InstitutionStatus.available;
+    }
+    return switch (raw) {
+      'maintenance' => InstitutionStatus.maintenance,
+      'unsupported' => InstitutionStatus.unsupported,
+      _ => InstitutionStatus.comingSoon,
+    };
+  }
 
   factory Institution.fromMap(Map<String, dynamic> map) => Institution(
         id: map['id'] as String,

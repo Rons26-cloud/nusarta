@@ -166,10 +166,11 @@ class NusartaAuthScaffold extends StatelessWidget {
                       right: 0,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: AppColors.cream.withOpacity(.97),
+                          color: AppColors.isDark
+                              ? AppColors.surfaceElevated
+                              : AppColors.cream,
                           borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(30),
-                          ),
+                              top: Radius.circular(30)),
                         ),
                       ),
                     ),

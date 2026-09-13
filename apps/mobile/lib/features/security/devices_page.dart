@@ -79,7 +79,7 @@ class DevicesPage extends ConsumerWidget {
               DevicePlatform.web => Icons.language,
               DevicePlatform.other => Icons.devices_other,
             },
-            color: AppColors.primary,
+            color: AppColors.brandEmerald,
           ),
         ),
         title: Row(
@@ -100,7 +100,7 @@ class DevicesPage extends ConsumerWidget {
                   color: AppColors.income.withAlpha(31),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Text(
+                child: Text(
                   'Perangkat ini',
                   style: TextStyle(
                     fontSize: 11,

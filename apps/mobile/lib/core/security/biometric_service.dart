@@ -1,60 +1,75 @@
-import 'package:flutter/services.dart';
-import 'package:local_auth/error_codes.dart' as auth_error;
 import 'package:local_auth/local_auth.dart';
-
 import 'auto_lock_service.dart';
+import 'pin_service.dart';
 import 'secure_store.dart';
 
-/// Biometric app unlock.
+class BiometricCapability {
+  const BiometricCapability(
+      {this.supported = false, this.canCheck = false, this.types = const []});
+  final bool supported;
+  final bool canCheck;
+  final List<BiometricType> types;
+  bool get available => supported && canCheck && types.isNotEmpty;
+  bool get fingerprint => types.contains(BiometricType.fingerprint);
+  bool get face => types.contains(BiometricType.face);
+  bool get generic => available && !fingerprint && !face;
+}
+
 class BiometricService {
   BiometricService._();
-
   static final LocalAuthentication _auth = LocalAuthentication();
+  static bool _authenticating = false;
+  static bool get authenticating => _authenticating;
 
-  static Future<bool> isSupported() async {
+  static Future<BiometricCapability> capability() async {
     try {
-      return await _auth.isDeviceSupported();
-    } catch (_) {
-      return false;
-    }
-  }
-
-  static Future<bool> canAuthenticate() async {
-    try {
-      final available = await _auth.getAvailableBiometrics();
-      return available.isNotEmpty;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  static Future<bool> get isEnabled async =>
-      await AppSecureStore.isBiometricEnabled;
-
-  /// Prompts the OS biometric dialog.
-  static Future<bool> unlock() async {
-    try {
-      final ok = await _auth.authenticate(
-        localizedReason: 'Buka NUSARTA untuk melihat keuanganmu',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: true,
-        ),
+      return BiometricCapability(
+        supported: await _auth.isDeviceSupported(),
+        canCheck: await _auth.canCheckBiometrics,
+        types: await _auth.getAvailableBiometrics(),
       );
-      if (ok) await AutoLockService.recordActivity();
-      return ok;
-    } catch (e) {
-      // User cancelled, device no longer enrolled, etc.
-      if (e is PlatformException &&
-          (e.code == auth_error.notAvailable ||
-              e.code == auth_error.passcodeNotSet)) {
-        return false;
-      }
-      return false;
+    } catch (_) {
+      return const BiometricCapability();
     }
   }
 
-  static Future<void> setEnabled(bool value) async {
-    await AppSecureStore.setBiometricEnabled(value);
+  static Future<bool> isSupported() async => (await capability()).supported;
+  static Future<bool> canAuthenticate() async => (await capability()).available;
+  static Future<bool> get isEnabled => AppSecureStore.isBiometricEnabled;
+
+  static Future<bool> _authenticate() async {
+    if (_authenticating ||
+        !await PinService.isSet ||
+        !await canAuthenticate()) {
+      return false;
+    }
+    _authenticating = true;
+    try {
+      return await _auth.authenticate(
+        localizedReason: 'Verifikasi identitas untuk membuka NUSARTA',
+        options:
+            const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
+      );
+    } catch (_) {
+      return false;
+    } finally {
+      _authenticating = false;
+    }
   }
+
+  static Future<bool> unlock() async {
+    if (!await isEnabled) return false;
+    final ok = await _authenticate();
+    if (ok) await AutoLockService.recordActivity();
+    return ok;
+  }
+
+  static Future<bool> enable() async {
+    if (!await _authenticate()) return false;
+    await setEnabled(true);
+    return true;
+  }
+
+  static Future<void> setEnabled(bool value) =>
+      AppSecureStore.setBiometricEnabled(value);
 }

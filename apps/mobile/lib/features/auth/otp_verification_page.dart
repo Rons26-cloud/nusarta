@@ -1,12 +1,15 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/nusarta_brand.dart';
+import '../../widgets/recovery_scaffold.dart';
 
 enum OtpStatus {
   idle,
@@ -36,7 +39,9 @@ class OtpVerificationPage extends ConsumerStatefulWidget {
       this.verifyCode,
       this.resendCode,
       this.cooldown = const Duration(seconds: 60),
-      this.onVerified});
+      this.onVerified,
+      this.recoveryArtwork = false});
+  final bool recoveryArtwork;
   final String email;
   final OtpPurpose purpose;
   final OtpVerifyCallback? verifyCode;
@@ -65,7 +70,7 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
     if (parts.length != 2) return widget.email;
     final name = parts.first;
     final visible = name.length <= 2 ? name : name.substring(0, 3);
-    return visible + '***@' + parts.last;
+    return '$visible***@${parts.last}';
   }
 
   @override
@@ -77,8 +82,12 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
   @override
   void dispose() {
     _timer?.cancel();
-    for (final c in _controllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -96,9 +105,12 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
     if (digits.length > 1) {
       _updating = true;
       final all = List<String>.filled(6, '');
-      for (var i = 0; i < index && i < 6; i++) all[i] = _controllers[i].text;
-      for (var i = 0; i < digits.length && index + i < 6; i++)
+      for (var i = 0; i < index && i < 6; i++) {
+        all[i] = _controllers[i].text;
+      }
+      for (var i = 0; i < digits.length && index + i < 6; i++) {
         all[index + i] = digits[i];
+      }
       for (var i = 0; i < 6; i++) {
         _controllers[i].value = TextEditingValue(
             text: all[i],
@@ -125,6 +137,15 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
     if (_complete) setState(() {});
   }
 
+  Widget _scaffold({required Widget child}) => widget.recoveryArtwork
+      ? RecoveryScaffold(
+          asset: 'assets/brand/terima_otp_reset_pass.png',
+          onBack: () => context.pop(),
+          child: child)
+      : NusartaAuthScaffold(
+          artworkAsset: 'assets/brand/otp.png',
+          onBack: () => context.pop(),
+          child: child);
   String _messageFor(Object error) {
     if (error is OtpFlowException) {
       switch (error.status) {
@@ -143,18 +164,22 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
     final status = error is AuthException ? error.statusCode : null;
     if (code.contains('expired') ||
         code.contains('otp_expired') ||
-        text.contains('expired')) return 'Kode verifikasi sudah kedaluwarsa.';
+        text.contains('expired')) {
+      return 'Kode verifikasi sudah kedaluwarsa.';
+    }
     if (code.contains('rate') ||
         code.contains('limit') ||
         status == '429' ||
         text.contains('rate') ||
-        text.contains('429'))
+        text.contains('429')) {
       return 'Terlalu banyak permintaan. Coba lagi sebentar.';
+    }
     if (code.contains('network') ||
         text.contains('socket') ||
         text.contains('network') ||
-        text.contains('timeout'))
+        text.contains('timeout')) {
       return 'Koneksi bermasalah. Periksa internet dan coba lagi.';
+    }
     return 'Verifikasi belum berhasil. Silakan coba lagi.';
   }
 
@@ -192,8 +217,9 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
       if (_remaining <= 1) {
         timer.cancel();
         setState(() => _remaining = 0);
-      } else
+      } else {
         setState(() => _remaining--);
+      }
     });
   }
 
@@ -220,104 +246,119 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
   Widget build(BuildContext context) {
     final busy =
         _status == OtpStatus.submitting || _status == OtpStatus.resending;
-    return NusartaAuthScaffold(
-        artworkAsset: 'assets/brand/otp.png',
-        onBack: () => context.pop(),
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const Icon(Icons.mark_email_read_outlined,
-              color: AppColors.gold, size: 34),
-          const SizedBox(height: 10),
-          Text('Verifikasi Email',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-          const SizedBox(height: 6),
-          const Text('Masukkan kode 6 digit yang kami kirim ke email kamu.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.neutral)),
-          const SizedBox(height: 12),
-          Text(_maskedEmail,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w700, color: AppColors.primary)),
-          const SizedBox(height: 24),
-          Semantics(
-              label: 'Kode verifikasi 6 digit',
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(6, (index) {
-                    final focused = _focusNodes[index].hasFocus;
-                    final invalid = _status == OtpStatus.invalid ||
-                        _status == OtpStatus.expired;
-                    return SizedBox(
-                        width: 45,
-                        child: DecoratedBox(
-                            decoration: BoxDecoration(
-                                color: AppColors.cream,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                    color: invalid
-                                        ? AppColors.danger
-                                        : focused
-                                            ? AppColors.gold
-                                            : AppColors.primary
-                                                .withOpacity(.18),
-                                    width: focused || invalid ? 2 : 1)),
-                            child: TextField(
-                                controller: _controllers[index],
-                                focusNode: _focusNodes[index],
-                                onChanged: (v) => _changed(index, v),
-                                keyboardType: TextInputType.number,
-                                textInputAction: index == 5
-                                    ? TextInputAction.done
-                                    : TextInputAction.next,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly
-                                ],
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textPrimary),
-                                decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    counterText: '',
-                                    contentPadding:
-                                        EdgeInsets.symmetric(vertical: 12)))));
-                  }))),
-          const SizedBox(height: 10),
-          const Text('Kode berlaku dalam waktu terbatas.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.neutral)),
-          if (_error != null)
-            Padding(
-                padding: const EdgeInsets.only(top: 14),
-                child: Text(_error!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: _status == OtpStatus.typing
-                            ? AppColors.primary
-                            : AppColors.danger,
-                        fontWeight: FontWeight.w600))),
-          const SizedBox(height: 24),
-          NusartaPrimaryButton(
-              label:
-                  _status == OtpStatus.success ? 'Terverifikasi' : 'Verifikasi',
-              onPressed: !_complete || busy ? null : _verify,
-              loading: _status == OtpStatus.submitting),
-          const SizedBox(height: 18),
-          const Text('Belum menerima kode?',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.neutral)),
-          TextButton(
-              onPressed: _remaining > 0 || busy ? null : _resend,
-              child: Text(_status == OtpStatus.expired
-                  ? 'Kirim Kode Baru'
-                  : _remaining > 0
-                      ? 'Kirim ulang dalam 00:' +
-                          _remaining.toString().padLeft(2, '0')
-                      : 'Kirim ulang kode')),
-        ]));
+    return _scaffold(
+        child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+            decoration: BoxDecoration(
+              color: AppColors.isDark
+                  ? AppColors.surfaceElevated
+                  : AppColors.cream,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(Icons.mark_email_read_outlined,
+                      color: AppColors.gold, size: 34),
+                  const SizedBox(height: 10),
+                  Text('Masukkan Kode OTP',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary)),
+                  const SizedBox(height: 6),
+                  Text('Masukkan kode 6 digit yang kami kirim ke email kamu.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.neutral)),
+                  const SizedBox(height: 12),
+                  Text(_maskedEmail,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.brandEmerald)),
+                  const SizedBox(height: 24),
+                  Semantics(
+                      label: 'Kode verifikasi 6 digit',
+                      child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(6, (index) {
+                            final focused = _focusNodes[index].hasFocus;
+                            final invalid = _status == OtpStatus.invalid ||
+                                _status == OtpStatus.expired;
+                            return SizedBox(
+                                width: 45,
+                                child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                        color: AppColors.isDark
+                                            ? AppColors.surfaceElevated
+                                            : AppColors.cream,
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                            color: invalid
+                                                ? AppColors.danger
+                                                : focused
+                                                    ? AppColors.gold
+                                                    : AppColors.primary
+                                                        .withValues(alpha: .18),
+                                            width: focused || invalid ? 2 : 1)),
+                                    child: TextField(
+                                        controller: _controllers[index],
+                                        focusNode: _focusNodes[index],
+                                        onChanged: (v) => _changed(index, v),
+                                        keyboardType: TextInputType.number,
+                                        textInputAction: index == 5
+                                            ? TextInputAction.done
+                                            : TextInputAction.next,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly
+                                        ],
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.textPrimary),
+                                        decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                            counterText: '',
+                                            contentPadding:
+                                                EdgeInsets.symmetric(
+                                                    vertical: 12)))));
+                          }))),
+                  const SizedBox(height: 10),
+                  Text('Kode berlaku dalam waktu terbatas.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: AppColors.neutral)),
+                  if (_error != null)
+                    Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: _status == OtpStatus.typing
+                                    ? AppColors.primary
+                                    : AppColors.danger,
+                                fontWeight: FontWeight.w600))),
+                  const SizedBox(height: 24),
+                  NusartaPrimaryButton(
+                      label: _status == OtpStatus.success
+                          ? 'Terverifikasi'
+                          : 'Verifikasi',
+                      onPressed: !_complete || busy ? null : _verify,
+                      loading: _status == OtpStatus.submitting),
+                  const SizedBox(height: 18),
+                  Text('Belum menerima kode?',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.neutral)),
+                  TextButton(
+                      onPressed: _remaining > 0 || busy ? null : _resend,
+                      child: Text(_status == OtpStatus.expired
+                          ? 'Kirim Kode Baru'
+                          : _remaining > 0
+                              ? 'Kirim ulang dalam 00:${_remaining.toString().padLeft(2, '0')}'
+                              : 'Kirim ulang kode')),
+                ])));
   }
 }

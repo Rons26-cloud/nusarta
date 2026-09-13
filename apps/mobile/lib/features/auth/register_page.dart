@@ -61,13 +61,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             'Akun berhasil dibuat. Periksa email Anda dan buka tautan verifikasi.',
       );
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(
           () => _error = authErrorMessage(
             e,
             fallback: 'Pendaftaran belum berhasil. Silakan coba lagi.',
           ),
         );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -136,12 +137,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   margin: const EdgeInsets.only(top: 14),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(.08),
+                    color: AppColors.primary.withValues(alpha: .08),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
                     _message!,
-                    style: const TextStyle(color: AppColors.primary),
+                    style: TextStyle(color: AppColors.brandEmerald),
                   ),
                 ),
               if (_error != null)
@@ -149,14 +150,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   margin: const EdgeInsets.only(top: 14),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.expense.withOpacity(.08),
+                    color: AppColors.expense.withValues(alpha: .08),
                     borderRadius: BorderRadius.circular(14),
                     border:
-                        Border.all(color: AppColors.expense.withOpacity(.25)),
+                        Border.all(color: AppColors.expense.withValues(alpha: .25)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
                         color: AppColors.expense,
                         size: 20,
@@ -165,7 +166,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       Expanded(
                         child: Text(
                           _error!,
-                          style: const TextStyle(color: AppColors.expense),
+                          style: TextStyle(color: AppColors.expense),
                         ),
                       ),
                     ],

@@ -129,7 +129,7 @@ class _BudgetsPageState extends ConsumerState<BudgetsPage> {
                                           .titleMedium),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete_outline,
+                                  icon: Icon(Icons.delete_outline,
                                       color: AppColors.expense, size: 20),
                                   tooltip: 'Hapus budget',
                                   onPressed: () => _confirmDelete(context, b),

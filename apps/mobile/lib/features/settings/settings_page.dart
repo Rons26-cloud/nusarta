@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/security/biometric_service.dart';
 import '../../core/security/pin_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/security_event.dart';
@@ -22,6 +23,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   final _biometricKey = GlobalKey();
   final _autoLockKey = GlobalKey();
   bool? _biometric;
+  BiometricCapability _capability = const BiometricCapability();
   int _autoLock = 5;
 
   @override
@@ -32,6 +34,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _load() async {
     final controller = ref.read(lockControllerProvider);
+    _capability = await BiometricService.capability();
     _biometric = await controller.isBiometricEnabled();
     _autoLock = await controller.autoLockMinutes;
     if (!mounted) return;
@@ -63,7 +66,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         : '${devices.valueOrNull!.length} perangkat terdaftar';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Keamanan & Pengaturan')),
+      appBar: AppBar(title: const Text('Pengaturan')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -83,22 +86,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 SwitchListTile(
                   key: _biometricKey,
                   title: const Text('Buka dengan Biometrik'),
-                  subtitle: const Text(
-                      'Fingerprint / pengenalan wajah untuk membuka aplikasi'),
+                  subtitle:
+                      const Text('Verifikasi lokal melalui keamanan Android'),
                   value: _biometric ?? false,
-                  onChanged: _biometric == null
+                  onChanged: _biometric == null || !_capability.available
                       ? null
                       : (v) async {
                           setState(() => _biometric = v);
                           if (v) {
                             final ok = await controller.enableBiometric();
                             if (!ok) {
+                              if (!mounted) return;
                               setState(() => _biometric = false);
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                        'Perangkat tidak mendukung biometrik.'),
+                                        'Verifikasi biometrik dibatalkan atau belum tersedia. PIN tetap dapat digunakan.'),
                                   ),
                                 );
                               }
@@ -108,6 +112,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           }
                         },
                 ),
+                ListTile(
+                    leading: const Icon(Icons.fingerprint),
+                    title: const Text('Sidik Jari'),
+                    subtitle: Text(_capability.fingerprint
+                        ? (_biometric == true ? 'Aktif' : 'Nonaktif')
+                        : 'Tidak tersedia')),
+                ListTile(
+                    leading: const Icon(Icons.face_outlined),
+                    title: const Text('Pengenalan Wajah'),
+                    subtitle: Text(_capability.face
+                        ? (_biometric == true ? 'Aktif' : 'Nonaktif')
+                        : 'Tidak tersedia')),
+                if (_capability.generic)
+                  const ListTile(
+                      title: Text('Biometrik Android'),
+                      subtitle: Text(
+                          'Tersedia. Android tidak merinci jenis biometrik perangkat ini.')),
                 ListTile(
                   leading: const Icon(Icons.password),
                   title: const Text('Ubah PIN 6 digit'),
@@ -297,8 +318,7 @@ class _ChangePinDialogState extends ConsumerState<_ChangePinDialog> {
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 10),
-              child: Text(_error!,
-                  style: const TextStyle(color: AppColors.expense)),
+              child: Text(_error!, style: TextStyle(color: AppColors.expense)),
             ),
         ],
       ),

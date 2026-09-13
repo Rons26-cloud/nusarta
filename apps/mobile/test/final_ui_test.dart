@@ -8,6 +8,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nusarta/core/theme/app_colors.dart';
 import 'package:nusarta/core/theme/app_theme.dart';
 import 'package:nusarta/data/models/account.dart';
 import 'package:nusarta/data/models/category.dart';
@@ -92,6 +93,7 @@ Future<GoRouter> mount(
     {GlobalKey? boundary}) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = Size(width, 820);
+  AppColors.setBrightness(dark ? Brightness.dark : Brightness.light);
   final router = GoRouter(initialLocation: '/preview', routes: [
     GoRoute(path: '/preview', builder: (_, __) => page),
     GoRoute(

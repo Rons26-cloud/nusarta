@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp" android:height="288dp"
+    android:viewportWidth="288" android:viewportHeight="288">
+    <!-- A transparent, safe-zone N monogram. No launcher tile or wordmark. -->
+    <path android:fillColor="#D9A93B"
+        android:pathData="M91,201 L91,87 L108,87 L178,173 L178,87 L197,87 L197,201 L180,201 L110,115 L110,201 Z" />
+    <path android:fillColor="#F5DE99"
+        android:pathData="M91,87 L108,87 L197,195 L197,201 L180,201 Z" />
+    <path android:fillColor="#10A474"
+        android:pathData="M158,108 C156,87 168,72 192,67 C190,87 178,103 158,108 Z" />
+</vector>

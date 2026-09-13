@@ -124,12 +124,12 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
         const SizedBox(height: 12),
         Card(
           color: AppColors.expense.withAlpha(15),
-          child: const Padding(
-            padding: EdgeInsets.all(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
             child: Text(
               'Data akun dan catatan keuangan yang terkait akan dihapus '
               'secara permanen. Tindakan ini tidak dapat dibatalkan.',
-              style: TextStyle(color: Color(0xFF7E2419)),
+              style: TextStyle(color: AppColors.danger),
             ),
           ),
         ),
@@ -181,7 +181,7 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
           const SizedBox(height: 12),
           Text(_error!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.expense)),
+              style: TextStyle(color: AppColors.expense)),
         ],
       ],
     );
@@ -203,7 +203,7 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
             child: Text(
               'Akun $_email dan semua data terkait akan dihapuskan dari '
               'server. Tidak ada cara untuk mengembalikannya.',
-              style: const TextStyle(color: Color(0xFF7E2419)),
+              style: TextStyle(color: AppColors.danger),
             ),
           ),
         ),
@@ -243,7 +243,7 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
           const SizedBox(height: 8),
           Text(_error!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.expense)),
+              style: TextStyle(color: AppColors.expense)),
         ],
       ],
     );
@@ -261,8 +261,7 @@ class _Bullet extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          const Icon(Icons.remove_circle_outline,
-              size: 18, color: AppColors.expense),
+          Icon(Icons.remove_circle_outline, size: 18, color: AppColors.expense),
           const SizedBox(width: 8),
           Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
         ],

@@ -1,456 +1,582 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/security/secure_store.dart';
 import '../../core/theme/app_colors.dart';
-import '../../data/models/transaction.dart';
-import '../../providers/auth_provider.dart';
+import '../../core/utils/labels.dart';
+import '../../data/models/account.dart';
 import '../../providers/finance_providers.dart';
 import '../../widgets/cash_flow_chart.dart';
 import '../../widgets/finance_load_state.dart';
+import '../../widgets/finance_overview.dart';
 import '../../widgets/finance_summary.dart';
-import '../../widgets/transaction_tile.dart';
+import '../../widgets/finance_transaction_entry.dart';
+import '../reports/finance_view_data.dart';
 import '../transactions/add_transaction_sheet.dart';
+import 'connected_accounts_section.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
-
   @override
   ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _hideBalance = false;
+  final _cache = FinanceViewCache();
+  final _previousCache = FinanceViewCache();
+  final _comparisonCache = FinanceViewCache();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _hideBalance = await AppSecureStore.hideBalance;
-      if (mounted) setState(() {});
+    AppSecureStore.hideBalance.then((value) {
+      if (mounted) setState(() => _hideBalance = value);
     });
   }
 
-  DateTime get _monthStart {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, 1);
-  }
-
-  String _timeGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 11) return 'Selamat pagi!';
-    if (hour < 15) return 'Selamat siang!';
-    if (hour < 19) return 'Selamat sore!';
-    return 'Selamat malam!';
-  }
-
-  void _openAddSheet({TransactionKind? kind}) {
-    showModalBottomSheet(
+  void _add() => showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => AddTransactionSheet(initialKind: kind),
-    );
-  }
+      builder: (_) => const AddTransactionSheet());
 
   @override
   Widget build(BuildContext context) {
     final accounts = ref.watch(accountsProvider);
     final transactions = ref.watch(transactionsProvider);
-    final notifications = ref.watch(notificationsProvider);
-    final user = ref.watch(currentUserProvider);
-
-    final unreadCount = notifications.valueOrNull == null
-        ? 0
-        : notifications.valueOrNull!.where((n) => !n.isRead).length;
-
+    final categories = ref.watch(allCategoriesProvider);
+    final categoryNames = <String, String>{
+      for (final c in categories.valueOrNull ?? []) c.id: c.name
+    };
+    final accountNames = <String, String>{
+      for (final a in accounts.valueOrNull ?? []) a.id: a.displayName ?? a.name
+    };
     final now = DateTime.now();
-    final monthLabel = DateFormat.yMMMM('id_ID').format(now);
-
-    final displayName = user?.userMetadata?['display_name'] as String?;
-    final greetingName = (displayName != null && displayName.trim().isNotEmpty)
-        ? displayName.trim()
-        : (user?.email?.split('@').first ?? '');
+    final start = DateTime(now.year, now.month);
+    final end = DateTime(now.year, now.month + 1);
+    final txs = transactions.valueOrNull;
+    final data = txs == null ? null : _cache.get(txs, start, end);
+    final prior = txs == null
+        ? null
+        : _previousCache.get(txs, DateTime(now.year, now.month - 1), start);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Image.asset(
-          'assets/brand/logo.png',
-          height: 32,
-          fit: BoxFit.contain,
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Notifikasi',
-            onPressed: () => context.push('/notifications'),
-            icon: Badge(
-              isLabelVisible: unreadCount > 0,
-              label: Text('$unreadCount'),
-              child: const Icon(Icons.notifications_outlined),
-            ),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(accountsProvider);
-          ref.invalidate(transactionsProvider);
-        },
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    greetingName.isEmpty
-                        ? 'Halo 👋'
-                        : 'Halo, ${greetingName[0].toUpperCase()}'
-                            '${greetingName.substring(1)} 👋',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${_timeGreeting()} · Keuangan yang baik, dimulai hari ini.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppColors.neutral),
-                  ),
-                ],
-              ),
-            ),
-            accounts.when(
-              loading: () => const _BalanceSkeleton(),
-              error: (error, _) => FinanceLoadError(
-                  error: error,
-                  onRetry: () => ref.invalidate(accountsProvider)),
-              data: (list) {
-                final total = list
-                    .where((a) => !a.isArchived)
-                    .fold<double>(0, (s, a) => s + a.balance);
-                return _BalanceCard(
-                  total: total,
-                  subtitle: 'Total saldo seluruh akun',
-                  hidden: _hideBalance,
-                  onToggleVisibility: () async {
-                    final next = !_hideBalance;
-                    setState(() => _hideBalance = next);
-                    await AppSecureStore.setHideBalance(next);
-                  },
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            _QuickActions(
-              onAdd: () => _openAddSheet(),
-              onTransactions: () => context.push('/transactions'),
-              onReports: () => context.push('/reports'),
-              onBudgets: () => context.push('/budgets'),
-            ),
-            const SizedBox(height: 16),
-            Text('Ringkasan bulanan · $monthLabel',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            transactions.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (error, _) => FinanceLoadError(
-                  error: error,
-                  onRetry: () => ref.invalidate(transactionsProvider)),
-              data: (txs) {
-                final monthTx = txs
-                    .where((t) =>
-                        !t.occurredAt.isBefore(_monthStart) &&
-                        t.occurredAt
-                            .isBefore(DateTime(now.year, now.month + 1)))
-                    .toList();
-                final income = monthTx
-                    .where((t) => t.kind.name == 'income')
-                    .fold<double>(0, (s, t) => s + t.amount);
-                final expense = monthTx
-                    .where((t) => t.kind.name == 'expense')
-                    .fold<double>(0, (s, t) => s + t.amount);
-
-                return Row(
-                  children: [
-                    Expanded(
-                      child: _StatBox(
-                        label: 'Pemasukan',
-                        amount: income,
-                        color: AppColors.income,
-                        hidden: _hideBalance,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatBox(
-                        label: 'Pengeluaran',
-                        amount: expense,
-                        color: AppColors.expense,
-                        hidden: _hideBalance,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            transactions.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (_, __) => const Text('Ringkasan belum dapat dimuat.'),
-              data: (txs) => CashFlowChart(
-                  transactions: txs,
-                  start: _monthStart,
-                  end: DateTime(now.year, now.month + 1),
-                  hidden: _hideBalance),
-            ),
-            const SizedBox(height: 16),
-            Row(
+      backgroundColor: AppColors.backgroundOff,
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+            statusBarColor: AppColors.deepEmerald,
+            statusBarIconBrightness: Brightness.light),
+        child: SafeArea(
+          top: false,
+          child: RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(accountsProvider);
+              ref.invalidate(transactionsProvider);
+              ref.invalidate(budgetsProvider);
+              ref.invalidate(goalsProvider);
+              await Future.wait([
+                ref
+                    .read(accountsProvider.future)
+                    .then<void>((_) {}, onError: (Object _, StackTrace __) {}),
+                ref
+                    .read(transactionsProvider.future)
+                    .then<void>((_) {}, onError: (Object _, StackTrace __) {}),
+              ]);
+            },
+            child: ListView(
+              key: const PageStorageKey('home-scroll'),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
               children: [
-                Expanded(
-                    child: Text('Transaksi terbaru',
-                        style: Theme.of(context).textTheme.titleMedium)),
-                TextButton(
-                  onPressed: () => context.push('/transactions'),
-                  child: const Text('Lihat semua'),
+                const _Hero(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 12),
+                      _Balance(
+                          accounts: accounts,
+                          retry: () => ref.invalidate(accountsProvider),
+                          data: data,
+                          hidden: _hideBalance,
+                          toggle: () async {
+                            setState(() => _hideBalance = !_hideBalance);
+                            await AppSecureStore.setHideBalance(_hideBalance);
+                          }),
+                      if ((accounts.valueOrNull ?? const <Account>[])
+                          .any((a) => a.isLinked)) ...[
+                        const SizedBox(height: 14),
+                        ConnectedAccountsSection(
+                            accounts: accounts.valueOrNull ?? const <Account>[],
+                            institutions:
+                                ref.watch(institutionsProvider).valueOrNull ??
+                                    const [],
+                            hidden: _hideBalance),
+                      ],
+                      const SizedBox(height: 16),
+                      _Actions(
+                          onAdd: _add,
+                          onTransfer: () => context.push('/transfer'),
+                          onBudget: () => context.push('/budgets'),
+                          onGoal: () => context.push('/goals')),
+                      const SizedBox(height: 22),
+                      _title(context, 'Ringkasan bulan ini',
+                          DateFormat.yMMMM('id_ID').format(now)),
+                      const SizedBox(height: 10),
+                      InlineFinanceState(
+                        state: transactions,
+                        retry: () => ref.invalidate(transactionsProvider),
+                        builder: (list) {
+                          final current = _cache.get(list, start, end);
+                          final comparable =
+                              _comparisonCache.get(list, start, now);
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              FinanceMetrics(
+                                  data: current, hidden: _hideBalance),
+                              const SizedBox(height: 10),
+                              PeriodComparison(
+                                  current: comparable,
+                                  previous: prior ?? current,
+                                  hidden: _hideBalance),
+                              const SizedBox(height: 14),
+                              CashFlowChart(
+                                  transactions: current.transactions,
+                                  start: start,
+                                  end: end,
+                                  hidden: _hideBalance),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      FinanceSection(
+                          title: 'Akun keuangan',
+                          route: '/accounts',
+                          child: InlineFinanceState(
+                              state: accounts,
+                              retry: () => ref.invalidate(accountsProvider),
+                              builder: (list) {
+                                final active = list
+                                    .where((a) => !a.isArchived)
+                                    .take(3)
+                                    .toList();
+                                if (active.isEmpty) {
+                                  return const Text('Belum ada akun keuangan.');
+                                }
+                                return Column(
+                                  children: [
+                                    for (final account in active)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 7),
+                                        child: Row(
+                                          children: [
+                                            CircleAvatar(
+                                              backgroundColor: AppColors.primary
+                                                  .withAlpha(22),
+                                              child: Icon(
+                                                account.type == AccountType.bank
+                                                    ? Icons
+                                                        .account_balance_outlined
+                                                    : account.type ==
+                                                            AccountType.ewallet
+                                                        ? Icons
+                                                            .phone_android_outlined
+                                                        : Icons
+                                                            .payments_outlined,
+                                                color: AppColors.brandEmerald,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                      account.displayName ??
+                                                          account.name,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700)),
+                                                  Text(
+                                                    accountTypeLabel(
+                                                            account.type) +
+                                                        (account.maskedAccountNumber ==
+                                                                null
+                                                            ? ''
+                                                            : ' • ${account.maskedAccountNumber!}'),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodySmall,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Flexible(
+                                              child: MoneyValue(account.balance,
+                                                  hidden: _hideBalance,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleSmall),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              })),
+                      if (data != null) ...[
+                        const SizedBox(height: 14),
+                        BudgetOverview(
+                            data: data,
+                            categoryNames: categoryNames,
+                            hidden: _hideBalance),
+                      ],
+                      const SizedBox(height: 14),
+                      GoalsOverview(hidden: _hideBalance),
+                      const SizedBox(height: 14),
+                      _title(context, 'Transaksi terbaru', null),
+                      const SizedBox(height: 8),
+                      InlineFinanceState(
+                        state: transactions,
+                        retry: () => ref.invalidate(transactionsProvider),
+                        builder: (list) {
+                          final recent = [...list]..sort(
+                              (a, b) => b.occurredAt.compareTo(a.occurredAt));
+                          if (recent.isEmpty) {
+                            return FinanceSection(
+                                title: 'Belum ada transaksi',
+                                child: FilledButton.tonal(
+                                    onPressed: _add,
+                                    child: const Text('Tambah Transaksi')));
+                          }
+                          return Column(
+                            children: [
+                              for (final t in recent.take(5))
+                                FinanceTransactionEntry(
+                                  transaction: t,
+                                  hidden: _hideBalance,
+                                  categoryName: categoryNames[t.categoryId] ??
+                                      (t.categoryId == null
+                                          ? 'Tanpa kategori'
+                                          : 'Kategori tidak tersedia'),
+                                  accountName: accountNames[t.accountId] ??
+                                      'Akun tidak tersedia',
+                                ),
+                              TextButton(
+                                onPressed: () => context.push('/transactions'),
+                                child: const Text('Lihat Semua Transaksi'),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      InlineFinanceState(
+                        state: transactions,
+                        retry: () => ref.invalidate(transactionsProvider),
+                        builder: (list) {
+                          final current = _cache.get(list, start, end);
+                          final ranked =
+                              FinanceViewData.ranked(current.expenseCategories);
+                          final highest = current.dailyExpense.entries.toList()
+                            ..sort((a, b) => b.value.compareTo(a.value));
+                          return FinanceSection(
+                              title: 'Insight',
+                              child: _hideBalance
+                                  ? const Text('Insight disembunyikan.')
+                                  : ranked.isEmpty
+                                      ? const Text(
+                                          'Belum cukup data pengeluaran untuk insight bulan ini.')
+                                      : Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            Text(
+                                                'Pengeluaran terbesar: ${categoryNames[ranked.first.key] ?? 'Tanpa kategori'}'),
+                                            MoneyValue(
+                                                ranked.first.value.amount),
+                                            if (highest.isNotEmpty) ...[
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                  'Hari pengeluaran tertinggi: ${DateFormat('d MMM yyyy', 'id_ID').format(highest.first.key)}'),
+                                              MoneyValue(highest.first.value),
+                                            ],
+                                            const SizedBox(height: 8),
+                                            const Text(
+                                                'Rata-rata pengeluaran per hari kalender'),
+                                            MoneyValue(current.expense /
+                                                current.elapsedDays(now)),
+                                          ],
+                                        ));
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      const Text('Anda sudah melihat seluruh ringkasan.',
+                          key: ValueKey('home-end'),
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: 18),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
               ],
             ),
-            transactions.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (error, _) => FinanceLoadError(
-                  error: error,
-                  onRetry: () => ref.invalidate(transactionsProvider)),
-              data: (txs) {
-                if (txs.isEmpty) {
-                  return _EmptyTransactions(
-                    onAdd: () => _openAddSheet(),
-                  );
-                }
-                return Column(
-                  children: txs
-                      .take(5)
-                      .map((t) => TransactionTile(
-                            transaction: t,
-                            categoryName: ref
-                                .watch(allCategoriesProvider)
-                                .valueOrNull
-                                ?.where((c) => c.id == t.categoryId)
-                                .firstOrNull
-                                ?.name,
-                          ))
-                      .toList(),
-                );
-              },
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _title(BuildContext context, String title, String? subtitle) => Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+              child: Text(title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800, color: AppColors.heading))),
+          if (subtitle != null)
+            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      );
 }
 
-class _QuickActions extends StatelessWidget {
-  const _QuickActions({
-    required this.onAdd,
-    required this.onTransactions,
-    required this.onReports,
-    required this.onBudgets,
-  });
-
-  final VoidCallback onAdd;
-  final VoidCallback onTransactions;
-  final VoidCallback onReports;
-  final VoidCallback onBudgets;
+class _Hero extends StatelessWidget {
+  const _Hero();
 
   @override
-  Widget build(BuildContext context) {
-    Widget action(IconData icon, String label, VoidCallback onTap) {
-      return Expanded(
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8E6)),
-            ),
-            child: Column(
-              children: [
-                Icon(icon, color: AppColors.primary, size: 22),
-                const SizedBox(height: 6),
-                Text(label,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12)),
-              ],
-            ),
+  Widget build(BuildContext context) => ClipPath(
+        clipper: _HeroClipper(),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(
+              20, MediaQuery.paddingOf(context).top + 10, 20, 27),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+                colors: [AppColors.deepEmerald, AppColors.primaryDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Image.asset('assets/brand/logo.png',
+                  height: 44, alignment: Alignment.centerLeft),
+              const SizedBox(height: 3),
+              const Text('Keuanganmu, Dalam Kendalimu.',
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500)),
+            ],
           ),
         ),
       );
-    }
-
-    return Row(
-      children: [
-        action(Icons.add_circle_outline, 'Tambah', onAdd),
-        const SizedBox(width: 8),
-        action(Icons.receipt_long_outlined, 'Transaksi', onTransactions),
-        const SizedBox(width: 8),
-        action(Icons.donut_small_outlined, 'Budget', onBudgets),
-        const SizedBox(width: 8),
-        action(Icons.bar_chart_outlined, 'Laporan', onReports),
-      ],
-    );
-  }
 }
 
-class _EmptyTransactions extends StatelessWidget {
-  const _EmptyTransactions({required this.onAdd});
-
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8E6)),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.receipt_long_outlined,
-              size: 40, color: AppColors.neutral),
-          const SizedBox(height: 8),
-          const Text('Belum ada transaksi.'),
-          const SizedBox(height: 12),
-          FilledButton.tonal(
-            onPressed: onAdd,
-            child: const Text('Tambah Transaksi'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BalanceCard extends StatelessWidget {
-  const _BalanceCard({
-    required this.total,
-    required this.subtitle,
-    required this.hidden,
-    required this.onToggleVisibility,
-  });
-
-  final double total;
-  final String subtitle;
+class _Balance extends StatelessWidget {
+  const _Balance(
+      {required this.accounts,
+      required this.retry,
+      required this.data,
+      required this.hidden,
+      required this.toggle});
+  final AsyncValue<List<Account>> accounts;
+  final FinanceViewData? data;
   final bool hidden;
-  final VoidCallback onToggleVisibility;
+  final VoidCallback toggle;
+  final VoidCallback retry;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.deepEmerald, AppColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text('Total Saldo',
-                  style: TextStyle(color: Colors.white70, fontSize: 13)),
-              const Spacer(),
-              IconButton(
-                onPressed: onToggleVisibility,
-                icon: Icon(
-                  hidden ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.white70,
-                  size: 20,
-                ),
-                tooltip: hidden ? 'Tampilkan saldo' : 'Sembunyikan saldo',
+  Widget build(BuildContext context) => accounts.when(
+        loading: () => const SizedBox(
+            height: 150, child: Center(child: LinearProgressIndicator())),
+        error: (error, _) => FinanceLoadError(error: error, onRetry: retry),
+        data: (list) {
+          final total = list
+              .where((a) => !a.isArchived)
+              .fold<double>(0, (sum, a) => sum + a.balance);
+          final linkedWithBalance = list
+              .where((a) => a.isLinked && a.lastSyncedAt != null)
+              .isNotEmpty;
+          return Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+                color: AppColors.deepEmerald,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.gold.withAlpha(90))),
+            child: CustomPaint(
+              painter: _BalancePainter(),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 14, 14, 17),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(children: [
+                        const Expanded(
+                            child: Text('Total saldo',
+                                style: TextStyle(
+                                    color: AppColors.goldLight,
+                                    fontWeight: FontWeight.w700))),
+                        IconButton(
+                            onPressed: toggle,
+                            color: Colors.white,
+                            tooltip: hidden
+                                ? 'Tampilkan saldo'
+                                : 'Sembunyikan saldo',
+                            icon: Icon(hidden
+                                ? Icons.visibility_off
+                                : Icons.visibility)),
+                      ]),
+                      MoneyValue(total,
+                          hidden: hidden,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 29,
+                              fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 5),
+                      Text(
+                          linkedWithBalance
+                              ? 'Total dari akun terhubung'
+                              : 'Seluruh akun aktif',
+                          style: const TextStyle(color: Colors.white70)),
+                      if (data != null &&
+                          (data!.income != 0 || data!.expense != 0)) ...[
+                        const SizedBox(height: 12),
+                        Wrap(spacing: 14, runSpacing: 6, children: [
+                          _Metric('Pemasukan', data!.income, hidden),
+                          _Metric('Pengeluaran', data!.expense, hidden),
+                          _Metric('Net cashflow', data!.net, hidden),
+                        ]),
+                      ],
+                    ]),
               ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          MoneyValue(
-            total,
+            ),
+          );
+        },
+      );
+}
+
+class _Metric extends StatelessWidget {
+  const _Metric(this.label, this.value, this.hidden);
+  final String label;
+  final double value;
+  final bool hidden;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+      width: 96,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label,
+            style: const TextStyle(color: Colors.white70, fontSize: 10)),
+        MoneyValue(value,
             hidden: hidden,
             style: const TextStyle(
-                color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          Text(subtitle, style: TextStyle(color: Colors.white.withAlpha(204))),
-        ],
-      ),
-    );
-  }
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700)),
+      ]));
 }
 
-class _BalanceSkeleton extends StatelessWidget {
-  const _BalanceSkeleton();
-
+class _Actions extends StatelessWidget {
+  const _Actions(
+      {required this.onAdd,
+      required this.onTransfer,
+      required this.onBudget,
+      required this.onGoal});
+  final VoidCallback onAdd, onTransfer, onBudget, onGoal;
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 120,
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight.withAlpha(38),
-        borderRadius: BorderRadius.circular(20),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Row(children: [
+        _Action(Icons.add_circle_outline, 'Tambah', onAdd),
+        _Action(Icons.swap_horiz_rounded, 'Transfer', onTransfer),
+        _Action(Icons.donut_small_outlined, 'Budget', onBudget),
+        _Action(Icons.flag_outlined, 'Tujuan', onGoal),
+      ]);
 }
 
-class _StatBox extends StatelessWidget {
-  const _StatBox({
-    required this.label,
-    required this.amount,
-    required this.color,
-    required this.hidden,
-  });
-
+class _Action extends StatelessWidget {
+  const _Action(this.icon, this.label, this.onTap);
+  final IconData icon;
   final String label;
-  final double amount;
-  final Color color;
-  final bool hidden;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Expanded(
+      child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.primary.withAlpha(24)),
+                  ),
+                  child: Column(children: [
+                    Icon(icon, color: AppColors.brandEmerald, size: 21),
+                    const SizedBox(height: 5),
+                    Text(label,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                  ])))));
+}
+
+class _HeroClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) => Path()
+    ..lineTo(0, size.height - 24)
+    ..quadraticBezierTo(
+        size.width * .35, size.height + 12, size.width * .72, size.height - 9)
+    ..quadraticBezierTo(
+        size.width * .92, size.height - 20, size.width, size.height - 42)
+    ..lineTo(size.width, 0)
+    ..close();
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+class _BalancePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gold = Paint()
+      ..color = AppColors.gold.withAlpha(125)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final path = Path()
+      ..moveTo(size.width * .4, size.height)
+      ..quadraticBezierTo(size.width * .6, size.height * .55, size.width * 1.05,
+          size.height * .35);
+    canvas.drawPath(path, gold);
+    final fine = Paint()
+      ..color = Colors.white.withAlpha(22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = .8;
+    for (var i = 0; i < 5; i++) {
+      canvas.drawArc(
+          Rect.fromLTWH(size.width * .34 - i * 14, size.height * .15 + i * 10,
+              size.width * .82 + i * 16, size.height * 1.2),
+          3.8,
+          1.1,
+          false,
+          fine);
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: AppColors.neutral)),
-            const SizedBox(height: 6),
-            MoneyValue(
-              amount,
-              hidden: hidden,
-              style: TextStyle(
-                  color: color, fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

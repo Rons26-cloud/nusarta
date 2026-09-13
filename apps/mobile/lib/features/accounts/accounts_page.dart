@@ -14,6 +14,7 @@ import '../../providers/finance_providers.dart';
 import '../../widgets/account_status_badge.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/finance_load_state.dart';
+import '../../widgets/institution_logo.dart';
 import '../../widgets/transaction_tile.dart';
 import 'add_account_sheet.dart';
 
@@ -99,26 +100,25 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
               ),
               if (!FeatureFlags.isEnabled(FeatureFlag.linkedAccounts)) ...[
                 const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withAlpha(26),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.rocket_launch_outlined,
-                          size: 18, color: AppColors.accent),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Menghubungkan akun bank & e-wallet otomatis segera '
-                          'hadir. Saat ini semua akun dicatat secara manual.',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(9),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withAlpha(24),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
+                      child: const Icon(Icons.link_rounded,
+                          size: 20, color: AppColors.accent),
+                    ),
+                    title: const Text('Hubungkan Akun',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
+                    subtitle: const Text(
+                        'Sinkronisasi otomatis bank & e-wallet segera hadir. '
+                        'Lihat katalog dan panduan.'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/link-accounts'),
                   ),
                 ),
               ],
@@ -239,19 +239,16 @@ class _AccountTile extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: AppColors.primary.withAlpha(26),
-                  child: institution?.logoUrl == null
-                      ? Icon(typeIcon, color: AppColors.primary)
-                      : ClipOval(
-                          child: Image.network(institution!.logoUrl!,
-                              width: 44,
-                              height: 44,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) =>
-                                  Icon(typeIcon, color: AppColors.primary))),
-                ),
+                if (institution != null)
+                  InstitutionLogo(
+                      code: institution!.code,
+                      name: institution!.name,
+                      size: 40)
+                else
+                  CircleAvatar(
+                      radius: 22,
+                      backgroundColor: AppColors.primary.withAlpha(26),
+                      child: Icon(typeIcon, color: AppColors.brandEmerald)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -468,7 +465,7 @@ class _AccountDetailsSheetState extends ConsumerState<_AccountDetailsSheet> {
                       CircleAvatar(
                         radius: 24,
                         backgroundColor: AppColors.primary.withAlpha(26),
-                        child: Icon(icon, color: AppColors.primary),
+                        child: Icon(icon, color: AppColors.brandEmerald),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -509,7 +506,7 @@ class _AccountDetailsSheetState extends ConsumerState<_AccountDetailsSheet> {
                     ).format(account.balance),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
+                          color: AppColors.brandEmerald,
                         ),
                   ),
                   const SizedBox(height: 16),
@@ -613,7 +610,7 @@ class _AccountDetailsSheetState extends ConsumerState<_AccountDetailsSheet> {
             const SizedBox(height: 8),
             TextButton(
               onPressed: _busy ? null : () => _confirmDelete(account),
-              child: const Text('Hapus Akun',
+              child: Text('Hapus Akun',
                   style: TextStyle(color: AppColors.expense)),
             ),
           ],

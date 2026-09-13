@@ -7,6 +7,19 @@ import 'package:nusarta/features/splash/splash_page.dart';
 import 'final_ui_test.dart' as preview;
 
 void main() {
+  testWidgets('Google sign-in button uses the official logo asset',
+      (tester) async {
+    final router = await preview.mount(tester, const LoginPage(), 390, false);
+    final logo = tester.widget<Image>(
+      find.byKey(const Key('google-sign-in-logo')),
+    );
+    expect((logo.image as AssetImage).assetName, 'assets/brand/google_g.png');
+    expect(find.widgetWithText(OutlinedButton, 'Masuk dengan Google'),
+        findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    router.dispose();
+  });
+
   for (final width in [360.0, 375.0, 390.0, 412.0, 430.0]) {
     for (final page in [const LoginPage(), const RegisterPage()]) {
       testWidgets('${page.runtimeType} keyboard $width', (tester) async {

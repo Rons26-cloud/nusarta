@@ -103,7 +103,7 @@ class _NotificationTile extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(vertical: 2),
       leading: CircleAvatar(
         backgroundColor: AppColors.primary.withAlpha(26),
-        child: Icon(icon, color: AppColors.primary, size: 20),
+        child: Icon(icon, color: AppColors.brandEmerald, size: 20),
       ),
       title: Row(
         children: [
@@ -121,7 +121,7 @@ class _NotificationTile extends StatelessWidget {
           ),
           if (!notification.isRead) ...[
             const SizedBox(width: 6),
-            const Icon(Icons.circle, size: 8, color: AppColors.primary),
+            Icon(Icons.circle, size: 8, color: AppColors.brandEmerald),
           ],
         ],
       ),

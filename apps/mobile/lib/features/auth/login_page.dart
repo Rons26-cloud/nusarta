@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -49,43 +50,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Future<void> _forgotPassword() async {
-    final textController = TextEditingController(text: _email.text.trim());
-    final target = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Lupa Kata Sandi'),
-        content: TextField(
-            controller: textController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-                labelText: 'Email', prefixIcon: Icon(Icons.mail_outline))),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, textController.text.trim()),
-              child: const Text('Kirim Tautan Reset')),
-        ],
-      ),
-    );
-    textController.dispose();
-    if (target == null || target.isEmpty || !mounted) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      await ref.read(authControllerProvider).resetPassword(target);
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content:
-                Text('Tautan reset kata sandi telah dikirim ke email kamu.')));
-    } catch (e) {
-      if (mounted) setState(() => _error = authErrorMessage(e));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+    if (kDebugMode) debugPrint('FORGOT_PASSWORD_TAPPED');
+    FocusScope.of(context).unfocus();
+    if (kDebugMode) debugPrint('FORGOT_PASSWORD_NAVIGATE_START');
+    await context.push('/forgot-password', extra: _email.text.trim());
   }
 
   void _showGooglePlaceholder() {
@@ -146,26 +114,55 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   margin: const EdgeInsets.only(bottom: 14),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                      color: AppColors.expense.withOpacity(.08),
+                      color: AppColors.expense.withValues(alpha: .08),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                          color: AppColors.expense.withOpacity(.25))),
+                          color: AppColors.expense.withValues(alpha: .25))),
                   child: Row(children: [
-                    const Icon(Icons.error_outline,
+                    Icon(Icons.error_outline,
                         color: AppColors.expense, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                         child: Text(_error!,
-                            style: const TextStyle(color: AppColors.expense)))
+                            style: TextStyle(color: AppColors.expense)))
                   ])),
             NusartaPrimaryButton(
                 label: 'Masuk',
                 onPressed: _loading ? null : _submit,
                 loading: _loading),
             const SizedBox(height: 14),
-            NusartaSecondaryButton(
-                label: 'Masuk dengan Google',
-                onPressed: _loading ? null : _showGooglePlaceholder),
+            OutlinedButton(
+              onPressed: _loading ? null : _showGooglePlaceholder,
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF1F1F1F),
+                side: const BorderSide(color: Color(0xFF747775)),
+                minimumSize: const Size.fromHeight(48),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 24,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Image.asset(
+                        'assets/brand/google_g.png',
+                        key: const Key('google-sign-in-logo'),
+                        width: 22,
+                        height: 22,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    const Align(
+                      alignment: Alignment.center,
+                      child: Text('Masuk dengan Google'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 14),
             Center(
                 child: Wrap(

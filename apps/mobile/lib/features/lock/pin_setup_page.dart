@@ -154,8 +154,8 @@ class _PinSetupPageState extends ConsumerState<PinSetupPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.lock_outline,
-                      size: 56, color: AppColors.primary),
+                  Icon(Icons.lock_outline,
+                      size: 56, color: AppColors.brandEmerald),
                   const SizedBox(height: 16),
                   Text(
                     _stepConfirm ? 'Konfirmasi PIN' : 'Buat PIN NUSARTA',
@@ -180,7 +180,7 @@ class _PinSetupPageState extends ConsumerState<PinSetupPage> {
                     const SizedBox(height: 12),
                     Text(_error!,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppColors.expense)),
+                        style: TextStyle(color: AppColors.expense)),
                   ],
                   const SizedBox(height: 24),
                   PinKeypad(

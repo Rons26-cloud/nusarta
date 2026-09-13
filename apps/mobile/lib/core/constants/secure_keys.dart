@@ -16,4 +16,6 @@ class SecureKeys {
   static const String deviceId = 'nusarta.device_id';
   static const String themeMode = 'nusarta.theme_mode';
   static const String updateCheckedAt = 'nusarta.update_checked_at';
+  static const String updateDismissedVersion =
+      'nusarta.update_dismissed_version';
 }

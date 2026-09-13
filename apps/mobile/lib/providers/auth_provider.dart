@@ -55,23 +55,43 @@ class AuthController {
 
   Future<void> _requireProfile(SupabaseClient backend, String userId) async {
     // The auth trigger creates the profile; retry briefly for REST visibility.
+    if (kDebugMode) {
+      debugPrint('ACCOUNT_SERVICE_START');
+      debugPrint('AUTH_USER_PRESENT');
+    }
     Object? lastError;
     for (var attempt = 0; attempt < 3; attempt++) {
       try {
+        if (kDebugMode) debugPrint('PROFILE_FETCH_START');
         final profile = await backend
             .from('profiles')
             .select('id')
             .eq('id', userId)
             .maybeSingle()
             .timeout(const Duration(seconds: 10));
-        if (profile != null) return;
+        if (profile != null) {
+          if (kDebugMode) {
+            debugPrint('PROFILE_FETCH_SUCCESS');
+            debugPrint('ACCOUNT_SERVICE_READY');
+          }
+          return;
+        }
+        if (kDebugMode) debugPrint('PROFILE_FETCH_EMPTY');
       } catch (error) {
         lastError = error;
+        if (kDebugMode) {
+          debugPrint('PROFILE_FETCH_ERROR=${error.runtimeType}');
+        }
         // Retry transient visibility or network failures.
       }
       if (attempt < 2) {
         await Future<void>.delayed(Duration(milliseconds: 250 * (attempt + 1)));
       }
+    }
+    if (kDebugMode) {
+      debugPrint(
+        'ACCOUNT_SERVICE_ERROR=${lastError?.runtimeType ?? AuthProfileException}',
+      );
     }
     _diagnostic('profile', 'unavailable');
     throw AuthProfileException(lastError);

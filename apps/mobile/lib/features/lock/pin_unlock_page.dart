@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -272,97 +273,108 @@ class _PinUnlockPageState extends ConsumerState<PinUnlockPage> {
   @override
   Widget build(BuildContext context) {
     final showBiometricShortcut = _pin.isEmpty && !_loading;
-    return Scaffold(
-      backgroundColor: AppColors.deepEmerald,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Image.asset(
-                    'assets/brand/logo.png',
-                    width: 72,
-                    height: 72,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'NUSARTA',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 4,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemStatusBarContrastEnforced: false,
+        systemNavigationBarContrastEnforced: false,
+        systemNavigationBarIconBrightness: Brightness.light,
+        systemNavigationBarDividerColor: Colors.transparent,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.deepEmerald,
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Image.asset(
+                      'assets/brand/logo.png',
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.contain,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _locked ? 'Uji coba melebihi batas' : 'Masukkan PIN Anda',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white.withAlpha(179)),
-                  ),
-                  const SizedBox(height: 28),
-                  PinDots(count: _pin.length, dotColor: Colors.white),
-                  if (_error != null) ...[
-                    const SizedBox(height: 14),
-                    Text(_error!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: _locked
-                                ? const Color(0xFFF2B8B5)
-                                : Colors.white)),
-                  ],
-                  if (_locked) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      _countdownLabel,
+                    const SizedBox(height: 16),
+                    const Text(
+                      'NUSARTA',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          color: Colors.white.withAlpha(204),
-                          fontWeight: FontWeight.w600),
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 4,
+                      ),
                     ),
-                  ],
-                  const SizedBox(height: 24),
-                  PinKeypad(
-                    enabled: !_locked && !_loading,
-                    buttonColor: Colors.white,
-                    highlightColor: Colors.white24,
-                    keyFill: AppColors.primary.withAlpha(71),
-                    biometricColor: AppColors.accentLight,
-                    onDigit: _onDigit,
-                    onDelete: _onDelete,
-                    onBiometric: showBiometricShortcut ? _tryBiometric : null,
-                  ),
-                  const SizedBox(height: 8),
-                  FutureBuilder<bool>(
-                    future: BiometricService.isEnabled,
-                    builder: (context, snapshot) {
-                      final enabled = snapshot.data ?? false;
-                      return Text(
-                        enabled ? 'atau gunakan biometrik' : '',
+                    const SizedBox(height: 8),
+                    Text(
+                      _locked ? 'Uji coba melebihi batas' : 'Masukkan PIN Anda',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white.withAlpha(179)),
+                    ),
+                    const SizedBox(height: 28),
+                    PinDots(count: _pin.length, dotColor: Colors.white),
+                    if (_error != null) ...[
+                      const SizedBox(height: 14),
+                      Text(_error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: _locked
+                                  ? const Color(0xFFF2B8B5)
+                                  : Colors.white)),
+                    ],
+                    if (_locked) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _countdownLabel,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            color: AppColors.accentLight.withAlpha(230),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: _showForgotPin,
-                    icon: const Icon(Icons.help_outline,
-                        size: 16, color: Colors.white70),
-                    label: const Text('Lupa PIN?',
-                        style: TextStyle(color: Colors.white70)),
-                  ),
-                ],
+                            color: Colors.white.withAlpha(204),
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    PinKeypad(
+                      enabled: !_locked && !_loading,
+                      buttonColor: Colors.white,
+                      highlightColor: Colors.white24,
+                      keyFill: AppColors.primary.withAlpha(71),
+                      biometricColor: AppColors.accentLight,
+                      onDigit: _onDigit,
+                      onDelete: _onDelete,
+                      onBiometric: showBiometricShortcut ? _tryBiometric : null,
+                    ),
+                    const SizedBox(height: 8),
+                    FutureBuilder<bool>(
+                      future: BiometricService.isEnabled,
+                      builder: (context, snapshot) {
+                        final enabled = snapshot.data ?? false;
+                        return Text(
+                          enabled ? 'atau gunakan biometrik' : '',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: AppColors.accentLight.withAlpha(230),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: _showForgotPin,
+                      icon: const Icon(Icons.help_outline,
+                          size: 16, color: Colors.white70),
+                      label: const Text('Lupa PIN?',
+                          style: TextStyle(color: Colors.white70)),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -32,7 +32,7 @@ class AccountStatusBadge extends StatelessWidget {
 
   (Color, Color) _colorsFor(AccountBadgeState state) => switch (state) {
         AccountBadgeState.manual => (
-            const Color(0xFFE2E8E6),
+            AppColors.surfaceMuted,
             AppColors.neutral,
           ),
         AccountBadgeState.connected => (
@@ -48,7 +48,7 @@ class AccountStatusBadge extends StatelessWidget {
             AppColors.expense,
           ),
         AccountBadgeState.revoked => (
-            const Color(0xFFE2E8E6),
+            AppColors.surfaceMuted,
             AppColors.neutral,
           ),
       };

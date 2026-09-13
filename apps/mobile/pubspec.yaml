@@ -34,6 +34,9 @@ dependencies:
   package_info_plus: ^8.0.2
   url_launcher: ^6.3.1
 
+  # Profile photo
+  image_picker: 1.1.2
+
 # app_links 6.4.x requires Flutter >= 3.27 (uses flutter.compileSdkVersion in
 # its Android build.gradle). Our toolchain is Flutter 3.24.3, so pin the
 # latest Flutter-3.24-compatible release (6.3.3 uses hardcoded compileSdk 34).
@@ -49,3 +52,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/brand/
+    - assets/brand/beranda-apk.png
+    - assets/institutions/
+    - assets/institutions/banks/
+    - assets/institutions/ewallets/

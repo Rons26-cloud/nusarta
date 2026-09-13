@@ -228,8 +228,7 @@ class _DetailSheet extends ConsumerWidget {
             children: [
               SizedBox(
                 width: 108,
-                child: Text(label,
-                    style: const TextStyle(color: AppColors.neutral)),
+                child: Text(label, style: TextStyle(color: AppColors.neutral)),
               ),
               Expanded(child: Text(value)),
             ],

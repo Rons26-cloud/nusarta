@@ -41,6 +41,12 @@ class AppSecureStore {
   static Future<void> setAutoLockMinutes(int minutes) =>
       SecureStore.write(SecureKeys.autoLockMinutes, minutes.toString());
 
+  static Future<String?> get dismissedUpdateVersion async =>
+      SecureStore.read(SecureKeys.updateDismissedVersion);
+
+  static Future<void> dismissUpdateVersion(String version) =>
+      SecureStore.write(SecureKeys.updateDismissedVersion, version);
+
   static Future<DateTime?> get lastUnlockAt async {
     final raw = await SecureStore.read(SecureKeys.lastUnlockAt);
     return raw == null ? null : DateTime.tryParse(raw);
