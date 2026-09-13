@@ -18,7 +18,7 @@ export type ReleaseCatalog = {
 export type GithubTestRelease = {
   tag: string;
   version: string;
-  build: string;
+  apkName: string;
   title: string;
   publishedAt: string;
   apkUrl: string;
@@ -160,45 +160,59 @@ export async function getLatestGithubRelease(): Promise<GithubRelease | null> {
   return (await getGithubReleases())[0] ?? null;
 }
 
-const TEST_RELEASE_TAG = "test-v1.0.1-build2";
-const testEndpoint = `${endpoint}/tags/${TEST_RELEASE_TAG}`;
-const TEST_RELEASE_APK = "NUSARTA-TEST-v1.0.1-build2.apk";
-export const TEST_RELEASE_APK_URL = `https://github.com/Rons26-cloud/nusarta/releases/download/${TEST_RELEASE_TAG}/${TEST_RELEASE_APK}`;
-const testReleaseFallback: GithubTestRelease = {
-  tag: TEST_RELEASE_TAG,
-  version: "1.0.1",
-  build: "2",
-  title: "NUSARTA v1.0.1 Build 2 — Device Test",
-  publishedAt: "2026-09-10T00:00:00Z",
-  apkUrl: TEST_RELEASE_APK_URL,
-  apkSize: 168525347,
+// Testing releases have their own channel and never fall back to production.
+export function normalizeTestReleases(raw: unknown): GithubTestRelease[] {
+  if (!Array.isArray(raw)) return [];
+  const releases: GithubTestRelease[] = [];
+  for (const item of raw) {
+    if (!record(item) || item.draft !== false || item.prerelease !== true ||
+        typeof item.tag_name !== "string" || !/^test-v[0-9][0-9A-Za-z.+-]*$/.test(item.tag_name) ||
+        typeof item.published_at !== "string" || !Number.isFinite(Date.parse(item.published_at)) ||
+        !Array.isArray(item.assets)) continue;
+    const version = item.tag_name.slice(5);
+    const apkName = "NUSARTA-TEST-" + version + ".apk";
+    const apk = item.assets.find((asset) => record(asset) && assetUrl(asset, item.tag_name as string, apkName));
+    if (!record(apk)) continue;
+    releases.push({
+      tag: item.tag_name, version, apkName,
+      title: typeof item.name === "string" ? item.name : "NUSARTA " + version,
+      publishedAt: item.published_at,
+      apkUrl: assetUrl(apk, item.tag_name, apkName)!,
+      apkSize: apk.size as number,
+    });
+  }
+  return releases.sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+}
+
+const CURRENT_TEST_RELEASE: GithubTestRelease = {
+  tag: "test-v1.0.3",
+  version: "v1.0.3",
+  apkName: "NUSARTA-TEST-v1.0.3.apk",
+  title: "NUSARTA v1.0.3 Testing",
+  publishedAt: "2026-09-12T12:51:07Z",
+  apkUrl: "https://github.com/Rons26-cloud/nusarta/releases/download/test-v1.0.3/NUSARTA-TEST-v1.0.3.apk",
+  apkSize: 200085835,
 };
 
 export async function getGithubTestRelease(): Promise<GithubTestRelease | null> {
   try {
-    const response = await fetch(testEndpoint, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(10000),
-      headers: { Accept: "application/vnd.github+json", "User-Agent": "NUSARTA-Release-Website", "X-GitHub-Api-Version": "2022-11-28" },
-    });
-    if (!response.ok) return testReleaseFallback;
-    const item: unknown = await response.json();
-    if (!record(item) || item.draft !== false || item.prerelease !== true ||
-        item.tag_name !== TEST_RELEASE_TAG || typeof item.published_at !== "string" ||
-        !Array.isArray(item.assets)) return testReleaseFallback;
-    const apk = item.assets.find((asset) => record(asset) && assetUrl(asset, TEST_RELEASE_TAG, TEST_RELEASE_APK));
-    if (!record(apk)) return testReleaseFallback;
-    return {
-      tag: TEST_RELEASE_TAG,
-      version: "1.0.1",
-      build: "2",
-      title: typeof item.name === "string" ? item.name : "NUSARTA v1.0.1 Build 2 — Device Test",
-      publishedAt: item.published_at,
-      apkUrl: assetUrl(apk, TEST_RELEASE_TAG, TEST_RELEASE_APK)!,
-      apkSize: apk.size as number,
-    };
+    const raw: unknown[] = [];
+    const signal = AbortSignal.timeout(10000);
+    for (let page = 1; page <= 100; page++) {
+      // Keep the testing channel live so a newly published prerelease is visible without waiting for a stale framework data-cache entry.
+      const response = await fetch(endpoint + "?per_page=100&page=" + page + "&channel=testing-v1", {
+        cache: "no-store", signal,
+        headers: { Accept: "application/vnd.github+json", "User-Agent": "NUSARTA-Release-Website", "X-GitHub-Api-Version": "2022-11-28" },
+      });
+      if (!response.ok) return CURRENT_TEST_RELEASE;
+      const items: unknown = await response.json();
+      if (!Array.isArray(items)) return CURRENT_TEST_RELEASE;
+      raw.push(...items);
+      if (!response.headers.get("link")?.includes('rel="next"')) return normalizeTestReleases(raw)[0] ?? CURRENT_TEST_RELEASE;
+    }
+    return CURRENT_TEST_RELEASE;
   } catch {
-    return testReleaseFallback;
+    return CURRENT_TEST_RELEASE;
   }
 }
 

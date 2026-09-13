@@ -17,7 +17,7 @@ import { CTASection } from "@/components/CTASection";
 import { releaseChannels } from "@/lib/data";
 
 import { playStoreUrl } from "@/lib/site";
-import { getGithubReleaseCatalog, getGithubTestRelease, apkSize, releaseDate, RELEASES_URL, TEST_RELEASE_APK_URL } from "@/lib/github-releases";
+import { getGithubReleaseCatalog, getGithubTestRelease, apkSize, releaseDate, RELEASES_URL } from "@/lib/github-releases";
 import { ReleaseCard, ReleaseChecksum, ReleaseNotes } from "@/components/ReleaseCard";
 
 export const dynamic = "force-dynamic";
@@ -173,16 +173,22 @@ export default async function DownloadPage() {
               </section>
             </Reveal>
 
-            {testRelease && (
+            {(
               <section aria-labelledby="android-test-heading" className="mt-6 rounded-2xl border border-amber-300/60 bg-amber-50/60 p-5 shadow-sm dark:bg-amber-950/20 sm:p-8">
                 <p className="text-xs font-semibold uppercase tracking-widest text-amber-800 dark:text-amber-300">Versi Pengujian Android</p>
-                <h2 id="android-test-heading" className="mt-2 font-display text-2xl font-bold text-foreground">NUSARTA v1.0.1 Build 2</h2>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">Versi ini digunakan untuk pengujian perangkat sebelum rilis resmi.</p>
-                <p className="mt-2 text-xs text-muted-foreground">Belum merupakan rilis produksi atau versi stabil.</p>
-                <a href={TEST_RELEASE_APK_URL} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-700/30 bg-amber-100 px-5 py-3 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60">
+                <h2 id="android-test-heading" className="mt-2 font-display text-2xl font-bold text-foreground">{testRelease ? testRelease.version : "Versi pengujian sementara tidak tersedia."}</h2>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">APK Android untuk pengujian. Bukan versi produksi final.</p>
+                <p className="mt-2 text-xs text-muted-foreground">Status: Pengujian / Pre-release &middot; Platform: Android</p>
+                {testRelease && <p className="mt-1 text-xs text-muted-foreground">Ukuran APK: {apkSize(testRelease.apkSize)}</p>}
+                {testRelease ? (<a href={testRelease.apkUrl} download={testRelease.apkName} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-700/30 bg-amber-100 px-5 py-3 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60">
                   <Download aria-hidden="true" className="h-5 w-5" />
-                  Download APK Test
-                </a>
+                  Download APK Pengujian
+                </a>) : (
+                  <button type="button" disabled className="mt-5 inline-flex min-h-12 cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-amber-700/30 bg-amber-100 px-5 py-3 text-sm font-semibold text-amber-950 opacity-50 dark:bg-amber-900/40 dark:text-amber-100">
+                    <Download aria-hidden="true" className="h-5 w-5" />
+                    Download APK Pengujian
+                  </button>
+                )}
               </section>
             )}
 

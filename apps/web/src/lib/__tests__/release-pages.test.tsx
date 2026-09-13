@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { render, screen, within, cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getGithubReleaseCatalog, getGithubTestRelease, normalizeReleases, TEST_RELEASE_APK_URL } from "../github-releases";
+import { getGithubReleaseCatalog, getGithubTestRelease, normalizeReleases } from "../github-releases";
 import { releaseFixture } from "./release-fixtures";
 import DownloadPage from "@/app/download/page";
 import ReleasesPage from "@/app/releases/page";
@@ -9,7 +9,7 @@ import ReleasesPage from "@/app/releases/page";
 vi.mock("@/lib/github-releases", async (original) => ({...await original<typeof import("../github-releases")>(), getGithubReleaseCatalog: vi.fn(), getGithubTestRelease: vi.fn().mockResolvedValue(null)}));
 vi.mock("@/components/Reveal", () => ({Reveal: ({children}: {children: ReactNode}) => <div>{children}</div>}));
 vi.mock("@/components/PhoneMockup", () => ({PhoneMockup: () => <div />}));
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.mocked(getGithubTestRelease).mockResolvedValue(null); });
 
 describe("release pages", () => {
   it("renders current GitHub metadata and previous releases with exact links", async () => {
@@ -38,13 +38,14 @@ describe("release pages", () => {
   it("uses the exact external device-test APK URL", async () => {
     vi.mocked(getGithubReleaseCatalog).mockResolvedValue({status: "ready", releases: []});
     vi.mocked(getGithubTestRelease).mockResolvedValue({
-      tag: "test-v1.0.1-build2", version: "1.0.1", build: "2",
+      tag: "test-v1.0.3", version: "v1.0.3", apkName: "NUSARTA-TEST-v1.0.3.apk",
       title: "NUSARTA v1.0.1 Build 2 — Device Test", publishedAt: "2026-09-10T00:00:00Z",
-      apkUrl: TEST_RELEASE_APK_URL, apkSize: 168525347,
+      apkUrl: "https://github.com/Rons26-cloud/nusarta/releases/download/test-v1.0.3/NUSARTA-TEST-v1.0.3.apk", apkSize: 168525347,
     });
     render(await DownloadPage());
-    const button = screen.getByRole("link", {name: "Download APK Test"});
-    expect(button).toHaveAttribute("href", TEST_RELEASE_APK_URL);
+    const button = screen.getByRole("link", {name: "Download APK Pengujian"});
+    expect(button).toHaveAttribute("href", "https://github.com/Rons26-cloud/nusarta/releases/download/test-v1.0.3/NUSARTA-TEST-v1.0.3.apk");
+    expect(screen.getByRole("heading", {name: "v1.0.3"})).toBeInTheDocument();
     expect(button).not.toHaveAttribute("href", "/");
     expect(button).toHaveAttribute("rel", "noopener noreferrer");
   });
@@ -52,6 +53,7 @@ describe("release pages", () => {
     vi.stubEnv("NEXT_PUBLIC_DOWNLOAD_URL", "/downloads/NUSARTA.apk");
     vi.mocked(getGithubReleaseCatalog).mockResolvedValue({status, releases: []});
     const {container} = render(await DownloadPage());
+    expect(screen.getByRole("button", {name: "Download APK Pengujian"})).toBeDisabled();
     expect(screen.getByRole("status")).toHaveTextContent(status === "unavailable" ? "belum dapat diperbarui" : "Belum ada rilis stabil");
     expect(container.querySelector('a[href$="/NUSARTA.apk"]')).toBeNull();
     expect(screen.queryByText("Versi 1.0.0")).not.toBeInTheDocument();
