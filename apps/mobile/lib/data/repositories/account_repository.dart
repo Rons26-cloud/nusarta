@@ -65,7 +65,9 @@ class AccountRepository {
 
   static Future<void> setPrimary(String id, {required bool isPrimary}) async {
     if (isPrimary) {
-      await clearPrimary(SupabaseConfig.client.auth.currentUser!.id);
+      await SupabaseConfig.client
+          .rpc('hub_set_primary', params: {'p_account': id});
+      return;
     }
     await SupabaseConfig.client
         .from(_table)

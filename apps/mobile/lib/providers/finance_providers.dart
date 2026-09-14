@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/feature_flags.dart';
+import '../core/data/supabase_client.dart';
 import '../core/security/secure_store.dart';
 import '../data/models/account.dart';
 import '../data/models/account_connection.dart';
@@ -265,3 +266,15 @@ final securityEventsProvider = FutureProvider<List<SecurityEvent>>(
     return SecurityRepository.listMine();
   },
 );
+
+// Masked saved recipients only; encrypted identifiers never enter the client.
+final transferRecipientsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null || !SupabaseConfig.isInitialized) return const [];
+  return await SupabaseConfig.client
+      .from('transfer_recipients')
+      .select('id,institution_id,display_name,account_reference_masked')
+      .eq('user_id', user.id)
+      .order('display_name');
+});

@@ -28,6 +28,9 @@ class ReceiptDetailPage extends StatelessWidget {
 
   String get _summaryText {
     final b = StringBuffer('NUSARTA — Keuanganmu, Dalam Kendalimu.\n');
+    if (record.isSimulation) {
+      b.writeln('SANDBOX · Simulasi, tidak ada uang nyata berpindah.');
+    }
     b.writeln(TransferStatusLabels.title(record.status));
     b.writeln('Sumber: ${record.sourceAccountName} ${record.sourceMasked}');
     b.writeln('Tujuan: ${record.recipientInstitutionName} '
@@ -61,6 +64,7 @@ class ReceiptDetailPage extends StatelessWidget {
     final status = record.status;
     final success = record.isSuccess;
     final icon = switch (status) {
+      TransferStepStatus.reversed => Icons.undo_rounded,
       TransferStepStatus.success => Icons.check_circle_rounded,
       TransferStepStatus.processing ||
       TransferStepStatus.authorized =>
@@ -113,7 +117,10 @@ class ReceiptDetailPage extends StatelessWidget {
                                   fontWeight: FontWeight.w800,
                                   fontSize: 19)),
                           const SizedBox(height: 6),
-                          Text(TransferStatusLabels.subtitle(status),
+                          Text(
+                              record.isSimulation
+                                  ? 'SANDBOX · Simulasi, tidak ada uang nyata berpindah.'
+                                  : TransferStatusLabels.subtitle(status),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                   color: Colors.white70,

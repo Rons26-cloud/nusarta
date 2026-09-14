@@ -73,6 +73,14 @@ class Account {
   final ConnectionType connectionType;
   final ConnectionStatus connectionStatus;
   final DateTime? lastSyncedAt;
+  final String balanceSource;
+  final String? accountHolderName;
+
+  bool get isConnected =>
+      isLinked &&
+      !isArchived &&
+      connectionStatus == ConnectionStatus.active &&
+      (type == AccountType.bank || type == AccountType.ewallet);
 
   const Account({
     required this.id,
@@ -93,9 +101,13 @@ class Account {
     this.connectionType = ConnectionType.manual,
     this.connectionStatus = ConnectionStatus.manual,
     this.lastSyncedAt,
+    this.balanceSource = 'unavailable',
+    this.accountHolderName,
   });
 
   factory Account.fromMap(Map<String, dynamic> map) => Account(
+        balanceSource: map['balance_source'] as String? ?? 'unavailable',
+        accountHolderName: map['account_holder_name'] as String?,
         id: map['id'] as String,
         userId: map['user_id'] as String,
         name: map['name'] as String,

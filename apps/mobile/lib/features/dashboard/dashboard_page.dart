@@ -8,6 +8,7 @@ import '../../core/security/secure_store.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/labels.dart';
 import '../../data/models/account.dart';
+import '../../data/repositories/balance_repository.dart';
 import '../../providers/finance_providers.dart';
 import '../../widgets/cash_flow_chart.dart';
 import '../../widgets/finance_load_state.dart';
@@ -108,7 +109,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             await AppSecureStore.setHideBalance(_hideBalance);
                           }),
                       if ((accounts.valueOrNull ?? const <Account>[])
-                          .any((a) => a.isLinked)) ...[
+                          .any((a) => a.isConnected)) ...[
                         const SizedBox(height: 14),
                         ConnectedAccountsSection(
                             accounts: accounts.valueOrNull ?? const <Account>[],
@@ -407,12 +408,12 @@ class _Balance extends StatelessWidget {
             height: 150, child: Center(child: LinearProgressIndicator())),
         error: (error, _) => FinanceLoadError(error: error, onRetry: retry),
         data: (list) {
-          final total = list
-              .where((a) => !a.isArchived)
-              .fold<double>(0, (sum, a) => sum + a.balance);
-          final linkedWithBalance = list
-              .where((a) => a.isLinked && a.lastSyncedAt != null)
-              .isNotEmpty;
+          const balances = BalanceRepository();
+          final linked = balances.connected(list);
+          final total = balances.total(list);
+          final simulated = linked.any((b) =>
+              b.source == BalanceSource.simulated ||
+              b.source == BalanceSource.sandbox);
           return Container(
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
@@ -442,18 +443,29 @@ class _Balance extends StatelessWidget {
                                 ? Icons.visibility_off
                                 : Icons.visibility)),
                       ]),
-                      MoneyValue(total,
-                          hidden: hidden,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 29,
-                              fontWeight: FontWeight.w800)),
+                      if (linked.isNotEmpty &&
+                          linked.every((b) => b.amount == null))
+                        const Text('Saldo belum tersedia',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700))
+                      else
+                        MoneyValue(total,
+                            hidden: hidden,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 29,
+                                fontWeight: FontWeight.w800)),
                       const SizedBox(height: 5),
                       Text(
-                          linkedWithBalance
-                              ? 'Total dari akun terhubung'
-                              : 'Seluruh akun aktif',
+                          simulated
+                              ? 'SANDBOX · Gabungan saldo simulasi'
+                              : 'Gabungan seluruh akun terhubung',
                           style: const TextStyle(color: Colors.white70)),
+                      if (linked.any((b) => b.amount == null))
+                        const Text('Sebagian saldo akun belum tersedia.',
+                            style: TextStyle(color: Colors.white70)),
                       if (data != null &&
                           (data!.income != 0 || data!.expense != 0)) ...[
                         const SizedBox(height: 12),

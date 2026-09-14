@@ -20,8 +20,11 @@ class TransferRecord {
     required this.occurredAt,
     this.message,
     this.currency = 'IDR',
+    this.executionMode = 'UNVERIFIED',
   });
 
+  final String executionMode;
+  bool get isSimulation => executionMode == 'SANDBOX_SIMULATED_SOURCE';
   final String reference;
   final String provider;
   final String sourceAccountName;
@@ -49,6 +52,7 @@ class TransferStatusLabels {
 
   static String title(TransferStepStatus status) => switch (status) {
         TransferStepStatus.success => 'Transfer Berhasil',
+        TransferStepStatus.reversed => 'Transfer Dikembalikan',
         TransferStepStatus.processing => 'Transfer sedang diproses',
         TransferStepStatus.authorized => 'Transfer berhasil diotorisasi',
         TransferStepStatus.failed => 'Transfer tidak berhasil',
@@ -60,6 +64,7 @@ class TransferStatusLabels {
   static String subtitle(TransferStepStatus status) => switch (status) {
         TransferStepStatus.success =>
           'Dana diproses melalui penyedia jasa resmi.',
+        TransferStepStatus.reversed => 'Dana dikembalikan ke akun sumber.',
         TransferStepStatus.processing =>
           'Penyedia sedang memproses transaksi ini.',
         TransferStepStatus.authorized => 'Menunggu pemrosesan dari penyedia.',

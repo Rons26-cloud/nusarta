@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/data/supabase_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/account_connection.dart';
 import '../../data/models/institution.dart';
 import '../../providers/finance_providers.dart';
 import '../../widgets/institution_logo.dart';
+import 'provider_registry.dart';
 
 enum _CatalogFilter { all, bank, ewallet }
 
@@ -365,13 +367,13 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-class _InstitutionDetailSheet extends StatelessWidget {
+class _InstitutionDetailSheet extends ConsumerWidget {
   const _InstitutionDetailSheet({required this.institution});
 
   final Institution institution;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final status = institution.status;
 
     final provider = institution.provider;
@@ -434,8 +436,35 @@ class _InstitutionDetailSheet extends StatelessWidget {
               _InfoRow('Provider', provider),
             ],
             const SizedBox(height: 18),
-            const FilledButton(
-                onPressed: null, child: Text('Penyambungan belum tersedia')),
+            if (FinancialProviderRegistry.sandboxEnabled &&
+                institution.providerSupport['simulation_supported'] == true)
+              FilledButton(
+                  onPressed: () async {
+                    try {
+                      await SupabaseConfig.client.functions
+                          .invoke('brankas-disburse', body: {
+                        'action': 'connect',
+                        'institution_id': institution.id
+                      });
+                      ref.invalidate(accountsProvider);
+                      ref.invalidate(accountConnectionsProvider);
+                      if (context.mounted) Navigator.pop(context);
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Koneksi simulasi belum tersedia.')));
+                      }
+                    }
+                  },
+                  child: const Text('Hubungkan akun SIMULASI'))
+            else
+              const FilledButton(
+                  onPressed: null, child: Text('Penyambungan belum tersedia')),
+            if (FinancialProviderRegistry.sandboxEnabled)
+              const Text(
+                  'SANDBOX · Identitas dan saldo uji dibuat oleh simulator, bukan koneksi bank nyata.'),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => Navigator.pop(context),

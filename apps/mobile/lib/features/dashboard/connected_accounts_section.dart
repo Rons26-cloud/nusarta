@@ -4,12 +4,13 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/account.dart';
 import '../../data/models/institution.dart';
+import '../../data/repositories/balance_repository.dart';
 import '../../widgets/finance_summary.dart';
 import '../../widgets/institution_logo.dart';
 
 /// "Akun Terhubung" on the Beranda. Renders only accounts that are genuinely
-/// linked to a provider (`isLinked`). No data here is fabricated: balance is
-/// shown only after a real provider sync (`lastSyncedAt` present).
+/// active and linked. Balance provenance is required; simulator balances
+/// are visibly labelled and never represented as live bank balances.
 class ConnectedAccountsSection extends StatelessWidget {
   const ConnectedAccountsSection({
     super.key,
@@ -24,7 +25,7 @@ class ConnectedAccountsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final linked = accounts.where((a) => a.isLinked).toList();
+    final linked = accounts.where((a) => a.isConnected).toList();
     if (linked.isEmpty) return const SizedBox.shrink();
     final byInstitution = <String, Institution>{
       for (final i in institutions) i.id: i
@@ -59,7 +60,7 @@ class ConnectedAccountsSection extends StatelessWidget {
               final account = linked[index];
               final institution = byInstitution[account.institutionId];
               final hasBalance =
-                  account.isLinked && account.lastSyncedAt != null;
+                  const BalanceRepository().read(account).amount != null;
               return SizedBox(
                 width: 224,
                 child: Card(
@@ -128,9 +129,12 @@ class ConnectedAccountsSection extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              account.lastSyncedAt == null
-                                  ? 'Belum sinkron'
-                                  : 'Terakhir sinkron · ${account.lastSyncedAt!.day}/${account.lastSyncedAt!.month}',
+                              account.balanceSource == 'simulated' ||
+                                      account.balanceSource == 'sandbox'
+                                  ? 'SANDBOX · Bukan saldo bank nyata'
+                                  : account.lastSyncedAt == null
+                                      ? 'Belum sinkron'
+                                      : 'Terakhir sinkron · ${account.lastSyncedAt!.day}/${account.lastSyncedAt!.month}',
                               style: TextStyle(
                                   color: AppColors.neutral, fontSize: 11.5),
                             ),

@@ -10,12 +10,14 @@ import '../../core/utils/labels.dart';
 import '../../data/models/account.dart';
 import '../../data/models/institution.dart';
 import '../../data/models/transaction.dart';
+import '../../data/repositories/balance_repository.dart';
 import '../../providers/finance_providers.dart';
 import '../../widgets/account_status_badge.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/finance_load_state.dart';
 import '../../widgets/institution_logo.dart';
 import '../../widgets/transaction_tile.dart';
+import '../dashboard/connected_accounts_section.dart';
 import 'add_account_sheet.dart';
 
 class AccountsPage extends ConsumerStatefulWidget {
@@ -51,7 +53,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
         data: (list) {
           final active = list.where((a) => !a.isArchived).toList();
           final archived = list.where((a) => a.isArchived).toList();
-          final total = active.fold<double>(0, (s, a) => s + a.balance);
+          final total = const BalanceRepository().total(active);
 
           if (active.isEmpty && archived.isEmpty) {
             return const EmptyState(
@@ -64,6 +66,12 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
             children: [
+              ConnectedAccountsSection(
+                  accounts: active, institutions: institutions, hidden: false),
+              TextButton.icon(
+                  onPressed: () => context.push('/link-accounts'),
+                  icon: const Icon(Icons.add_link),
+                  label: const Text('Hubungkan akun')),
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -77,7 +85,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Total Saldo',
+                    const Text('Total Saldo Akun Terhubung',
                         style: TextStyle(color: Colors.white70, fontSize: 13)),
                     const SizedBox(height: 8),
                     FittedBox(

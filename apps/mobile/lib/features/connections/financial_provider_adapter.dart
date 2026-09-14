@@ -5,9 +5,8 @@
 /// official provider). Provider secrets never reach the mobile client. The
 /// mobile app only talks to this capability contract.
 ///
-/// IMPORTANT: No adapter is registered until an official provider
-/// integration is actually available. Until then every capability returns
-/// "not available", which is the truthful state — never a fake success.
+/// Live capabilities remain unavailable. The optional debug simulator is
+/// explicitly identified in records and receipts, never a real provider.
 library;
 
 import '../../data/models/institution.dart';
@@ -104,7 +103,13 @@ class TransferRequest {
     required this.amount,
     this.note,
     required this.currency,
+    this.sourceAccountId,
+    this.destinationInstitutionId,
+    this.destinationAccountId,
   });
+  final String? sourceAccountId;
+  final String? destinationInstitutionId;
+  final String? destinationAccountId;
   final String idempotencyKey;
   final String sourceExternalId;
   final String institutionCode;
@@ -126,16 +131,22 @@ enum TransferStepStatus {
   failed,
   expired,
   cancelled,
+  reversed,
   unknown;
 
   bool get isFinal =>
-      this == success || this == failed || this == expired || this == cancelled;
+      this == success ||
+      this == reversed ||
+      this == failed ||
+      this == expired ||
+      this == cancelled;
 }
 
 class TransferReferenceResult {
   const TransferReferenceResult(
-      {required this.reference, required this.status});
+      {required this.reference, required this.status, this.record});
   final String reference;
+  final Map<String, dynamic>? record;
   final TransferStepStatus status;
 }
 

@@ -25,6 +25,7 @@ class FakeTransferActions implements TransferActions {
   final bool failStart;
   final Future<void>? pending;
   final TransferReferenceResult directResult;
+  final requests = <TransferRequest>[];
 
   @override
   Future<RecipientValidation> validateRecipient(
@@ -41,6 +42,7 @@ class FakeTransferActions implements TransferActions {
   @override
   Future<TransferReferenceResult> startTransfer(
       {required Institution target, required TransferRequest request}) async {
+    requests.add(request);
     if (pending != null) await pending;
     if (failStart) {
       throw UnsupportedError('Provider keuangan resmi belum tersedia.');
@@ -97,6 +99,7 @@ Widget flow(TransferActions actions) => MaterialApp(
           sources: [sourceAccount()],
           institutions: catalog(),
           actions: actions,
+          authorize: (_) async => true,
         ),
       ),
     );
@@ -111,9 +114,10 @@ Future<void> driveToRecipient(WidgetTester tester) async {
 }
 
 Future<void> fillTargetAndAmount(WidgetTester tester) async {
-  await tester.tap(find.text('BCA'));
+  await tester.tap(find.text('BCA').last);
   await tester.pumpAndSettle();
-  await tester.enterText(find.byType(TextField).first, '1234567890');
+  await tester.enterText(
+      find.byKey(const Key('transfer-recipient')), '1234567890');
   await tester.pumpAndSettle();
   await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
   await tester.pumpAndSettle();
@@ -155,7 +159,8 @@ void main() {
     expect(find.textContaining('provider resmi'), findsWidgets);
   });
 
-  testWidgets('successful flow ends on NUSARTA receipt, no PIN anywhere',
+  testWidgets(
+      'authorized flow ends on NUSARTA receipt without external bank PIN',
       (tester) async {
     await tester.pumpWidget(flow(FakeTransferActions()));
     await driveToRecipient(tester);
@@ -170,13 +175,15 @@ void main() {
     expect(find.textContaining('diproses melalui penyedia'), findsWidgets);
   });
 
-  testWidgets('no live provider -> honest failed receipt', (tester) async {
+  testWidgets(
+      'unavailable provider keeps request retryable without fabricated receipt',
+      (tester) async {
     await tester.pumpWidget(flow(FakeTransferActions(failStart: true)));
     await driveToRecipient(tester);
     await fillTargetAndAmount(tester);
     await tester.tap(find.widgetWithText(FilledButton, 'Konfirmasi Transfer'));
     await tester.pumpAndSettle();
-    expect(find.text('Transfer tidak berhasil'), findsWidgets);
+    expect(find.text('Transfer tidak berhasil'), findsNothing);
     expect(find.textContaining('Provider keuangan resmi belum tersedia.'),
         findsOneWidget);
     expect(find.text('Transfer Berhasil'), findsNothing);
@@ -206,9 +213,10 @@ void main() {
     await tester.pumpWidget(
         flow(FakeTransferActions(recipientValidationAvailable: true)));
     await driveToRecipient(tester);
-    await tester.tap(find.text('BCA'));
+    await tester.tap(find.text('BCA').last);
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, '1234567890');
+    await tester.enterText(
+        find.byKey(const Key('transfer-recipient')), '1234567890');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Validasi Penerima'));
     await tester.pumpAndSettle();

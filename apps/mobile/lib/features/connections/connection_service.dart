@@ -11,7 +11,8 @@ import 'provider_registry.dart';
 class ConnectionService {
   const ConnectionService._();
 
-  static bool get hasLiveProvider => FinancialProviderRegistry.hasAnyProvider;
+  static bool get hasLiveProvider => FinancialProviderRegistry.adapters
+      .any((a) => a.providerId != 'nusarta_simulator');
 
   static bool canLink(Institution institution) {
     final adapter =
@@ -29,6 +30,10 @@ class ConnectionService {
   }
 
   static FinancialProviderAdapter? _adapterFor(Institution institution) {
+    if (FinancialProviderRegistry.sandboxEnabled &&
+        institution.providerSupport['simulation_supported'] == true) {
+      return FinancialProviderRegistry.adapterFor('nusarta_simulator');
+    }
     if (institution.provider == null) return null;
     return FinancialProviderRegistry.adapterFor(institution.provider!);
   }
@@ -88,8 +93,8 @@ class ConnectionService {
     return adapter.getTransferQuote(request);
   }
 
-  /// Creates a transfer on the server. The provider (bank/e-wallet) performs
-  /// the PIN/biometric/OTP authorization; NUSARTA never collects those.
+  /// Creates a transfer after NUSARTA app authorization. Provider credentials
+  /// are never collected by this app. Backend enforces its own authorization.
   static Future<TransferReferenceResult> startTransfer(
       {int? userId,
       required Institution target,

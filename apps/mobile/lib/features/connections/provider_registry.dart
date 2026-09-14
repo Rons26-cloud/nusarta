@@ -1,15 +1,21 @@
+import 'package:flutter/foundation.dart';
+
 import 'financial_provider_adapter.dart';
+import 'sandbox_provider_adapter.dart';
 
 /// Registry of server-backed provider adapters.
 ///
-/// Deliberately empty: adapters are registered only when an official
-/// provider integration is live (license, OAuth/open-finance/SDK). The
-/// registry is the single place the app learns whether a real capability
-/// exists, so the UI can never display a fake "Terhubung".
+/// Live adapters stay absent until verified. An explicit debug-only flag
+/// registers the NUSARTA simulator; that adapter never claims live bank
+/// access. Institution branding alone never enables transfer capabilities.
 class FinancialProviderRegistry {
   const FinancialProviderRegistry._();
 
-  static const _adapters = <FinancialProviderAdapter>{};
+  static const sandboxEnabled =
+      kDebugMode && bool.fromEnvironment('NUSARTA_SANDBOX');
+  static const _adapters = <FinancialProviderAdapter>{
+    if (sandboxEnabled) SandboxProviderAdapter(),
+  };
 
   static bool get hasAnyProvider => _adapters.isNotEmpty;
 

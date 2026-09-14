@@ -75,7 +75,7 @@ function assertSandboxConfig(): void {
   }
 }
 
-function mapStatus(status: unknown): NusartaTransferStatus {
+export function mapStatus(status: unknown): NusartaTransferStatus {
   switch (status) {
     case "CREATED":
     case "PENDING":

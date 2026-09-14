@@ -1,0 +1,10 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.45.4"
+  },
+  "tasks": {
+    "lint": "deno lint functions/_shared/hub_sandbox.ts functions/_shared/payment_rails.ts functions/_shared/brankas_disburse.ts functions/brankas-disburse/index.ts functions/brankas-callback/index.ts functions/brankas-reconcile/index.ts tests/hub_sandbox_test.ts tests/payment_rails_test.ts",
+    "check": "deno check functions/brankas-disburse/index.ts functions/brankas-callback/index.ts functions/brankas-reconcile/index.ts",
+    "test": "deno test --allow-env tests/hub_sandbox_test.ts tests/payment_rails_test.ts"
+  }
+}
