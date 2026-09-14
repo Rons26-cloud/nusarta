@@ -149,7 +149,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           builder: (_) => DropdownButtonFormField<String>(
               key: ValueKey('account-filter-$_accountId'),
               isExpanded: true,
-              initialValue: accountNames.containsKey(_accountId) ? _accountId : null,
+              initialValue:
+                  accountNames.containsKey(_accountId) ? _accountId : null,
               decoration: const InputDecoration(labelText: 'Akun'),
               items: [
                 const DropdownMenuItem<String>(

@@ -152,8 +152,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   decoration: BoxDecoration(
                     color: AppColors.expense.withValues(alpha: .08),
                     borderRadius: BorderRadius.circular(14),
-                    border:
-                        Border.all(color: AppColors.expense.withValues(alpha: .25)),
+                    border: Border.all(
+                        color: AppColors.expense.withValues(alpha: .25)),
                   ),
                   child: Row(
                     children: [
