@@ -14,7 +14,11 @@ import {
   type RailCode,
 } from "../functions/_shared/payment_rails.ts";
 import {
+  BrankasProviderError,
+  createSandboxDisbursement,
   mapStatus,
+  validateDestinationAddress,
+  type DestinationAddress,
 } from "../functions/_shared/brankas_disburse.ts";
 import { EXECUTION_MODE } from "../functions/_shared/hub_sandbox.ts";
 
@@ -147,4 +151,190 @@ Deno.test("brankas callback/status mapping", async () => {
   // orchestrator never trusts an unverified callback.
   const result = await brankasSandboxRail.handleWebhook("{}", new Headers());
   assert(result === null);
+});
+
+const adapterInput = {
+  sourceAccountId: "src-123",
+  destinationBank: "BCA",
+  destinationNumber: "1234567890",
+  destinationHolderName: "Test Recipient Name",
+  amountMinor: "250000",
+  currency: "IDR",
+  merchantTxnId: "ns-9fb8c0a23e654c1a9e0b2ad7d9a0c123",
+  destinationAddress: {
+    line1: "Jl. Sudirman 1",
+    line2: "Lantai 2",
+    city: "Jakarta",
+    province: "DKI Jakarta",
+    zip_code: "10220",
+    country: "ID",
+  },
+};
+
+function withAdapterEnv(setup: () => Promise<void>): Promise<void> {
+  const keys = ["BRANKAS_API_KEY", "BRANKAS_ENV"];
+  const saved: Record<string, string | undefined> = {};
+  for (const key of keys) saved[key] = Deno.env.get(key);
+  Deno.env.set("BRANKAS_API_KEY", "test-api-key");
+  Deno.env.set("BRANKAS_ENV", "sandbox");
+  return setup().finally(() => {
+    for (const key of keys) {
+      const value = saved[key];
+      if (value === undefined) Deno.env.delete(key);
+      else Deno.env.set(key, value);
+    }
+  });
+}
+
+Deno.test("disbursement payload maps destination_account.address before POST", async () => {
+  await withAdapterEnv(async () => {
+    const captured: Array<{ url: string; body: Record<string, unknown> }> = [];
+    const fetchImpl = (
+      url: string | URL,
+      init?: RequestInit,
+    ): Promise<Response> => {
+      captured.push({
+        url: String(url),
+        body: JSON.parse(String(init?.body)) as Record<string, unknown>,
+      });
+      return Promise.resolve(new Response(JSON.stringify({
+        result: [{
+          disbursement: {
+            status: "PENDING",
+            disbursement_id: "d-001",
+            external: { reference_id: "r-001" },
+          },
+        }],
+      }), { status: 200, headers: { "content-type": "application/json" } }));
+    };
+
+    const result = await createSandboxDisbursement(adapterInput, { fetchImpl });
+
+    assert(captured.length === 1);
+    assert(captured[0].url === "https://disburse.sandbox.bnk.to/v2/disbursements");
+    const disbursements = captured[0].body["disbursements"] as Array<
+      Record<string, unknown>
+    >;
+    const account = disbursements[0]["destination_account"] as Record<
+      string,
+      unknown
+    >;
+    assert(account["bank"] === "BCA");
+    assert(account["number"] === "1234567890");
+    assert(account["holder_name"] === "Test Recipient Name");
+    assert(account["type"] === "PERSONAL");
+    const address = account["address"] as Record<string, unknown>;
+    assert(address["line1"] === "Jl. Sudirman 1");
+    assert(address["line2"] === "Lantai 2");
+    assert(address["city"] === "Jakarta");
+    assert(address["province"] === "DKI Jakarta");
+    assert(address["zip_code"] === "10220");
+    assert(address["country"] === "ID");
+    assert(result.status === "pending");
+    assert(result.providerDisbursementId === "d-001");
+    assert(result.providerReferenceId === "r-001");
+  });
+});
+
+Deno.test("missing destination address is rejected before any provider call", async () => {
+  await withAdapterEnv(async () => {
+    let networkCalled = false;
+    const fetchImpl = (): Promise<Response> => {
+      networkCalled = true;
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
+    };
+    await assertRejects(
+      createSandboxDisbursement(
+        {
+          ...adapterInput,
+          destinationAddress: undefined as unknown as DestinationAddress,
+        },
+        { fetchImpl },
+      ),
+      "destination_address_required",
+    );
+    assert(!networkCalled);
+  });
+});
+
+Deno.test("blank address field is rejected before any provider call", async () => {
+  await withAdapterEnv(async () => {
+    await assertRejects(
+      createSandboxDisbursement(
+        {
+          ...adapterInput,
+          destinationAddress: {
+            ...adapterInput.destinationAddress,
+            line1: "   ",
+          },
+        },
+      ),
+      "destination_address_invalid",
+    );
+    await assertRejects(
+      createSandboxDisbursement(
+        {
+          ...adapterInput,
+          destinationAddress: {
+            ...adapterInput.destinationAddress,
+            country: "Indonesia",
+          },
+        },
+      ),
+      "destination_country_invalid",
+    );
+  });
+});
+
+Deno.test("provider 4xx rejection keeps its own status and safe details", async () => {
+  await withAdapterEnv(async () => {
+    const fetchImpl = (): Promise<Response> => Promise.resolve(
+      new Response(JSON.stringify({
+        message: "invalid request body",
+        errors: [{ field: "destination_account.address", message: "cannot be blank" }],
+      }), { status: 400, headers: { "content-type": "application/json" } }),
+    );
+
+    let thrown: unknown;
+    try {
+      await createSandboxDisbursement(adapterInput, { fetchImpl });
+    } catch (error) {
+      thrown = error;
+    }
+    assert(thrown instanceof BrankasProviderError);
+    const providerError = thrown as BrankasProviderError;
+    assert(providerError.code === "provider_http_400");
+    assert(providerError.httpStatus === 400);
+    assert(typeof providerError.details === "string");
+    const details = providerError.details ?? "";
+    assert(details.includes("destination_account.address"));
+    assert(details.includes("cannot be blank"));
+  });
+});
+
+Deno.test("validateDestinationAddress accepts the documented address contract", () => {
+  const valid: DestinationAddress = {
+    line1: "Address line 01",
+    line2: "Address line 02",
+    city: "City Name",
+    province: "Province Name",
+    zip_code: "12345",
+    country: "id",
+  };
+  let accepted: DestinationAddress | undefined;
+  try {
+    validateDestinationAddress(valid);
+    accepted = valid;
+  } catch {
+    accepted = undefined;
+  }
+  assert(accepted !== undefined);
+
+  let rejected = false;
+  try {
+    validateDestinationAddress({ line1: "Jalan 1" });
+  } catch {
+    rejected = true;
+  }
+  assert(rejected);
 });

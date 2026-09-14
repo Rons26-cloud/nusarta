@@ -127,6 +127,7 @@ export const brankasSandboxRail: PaymentRail = {
       sourceAccountId,
       destinationBank: input.bankCode,
       destinationNumber: input.accountNumber,
+      destinationHolderName: input.accountHolderName,
       amountMinor: input.amountMinor,
       currency: input.currency,
       merchantTxnId: merchantTxnIdForTransferId(input.externalId),
